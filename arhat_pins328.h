@@ -8,12 +8,10 @@
  */
 #ifdef __AVR_ATmega328P__
 
-#include <stdint.h>
-
 #define ARDUINO_MEGA_PINS           18
 #define NUM_DIGITAL_PINS            ARDUINO_MEGA_PINS
 #define MAX_ANALOG_INPUTS           8
-#define analogInputToDigitalPin(p)  ((p < 16) ? (p) + 54 : -1)
+#define analogInputToDigitalPin(p)  ((p < 8) ? (p) + 10 : -1)
 #define digitalPinHasPWM(p)         (((p) >= 2 && (p) <= 13) || ((p) >= 44 && (p)<= 46))
 
 /** pin number at Arduino Mega board              */
@@ -196,26 +194,6 @@
 #define Analog5		5
 #define Analog6		6
 #define Analog7		7
-
-#define BUS_AD0		22
-#define BUS_AD1		23
-#define BUS_AD2		24
-#define BUS_AD3		25
-#define BUS_AD4		26
-#define BUS_AD5		27
-#define BUS_AD6		28
-#define BUS_AD7		29
-#define BUS_A8		37
-#define BUS_A9		36
-#define BUS_A10		35
-#define BUS_A11		34
-#define BUS_A12		33
-#define BUS_A13		32
-#define BUS_A14		31
-#define BUS_A15		30
-#define BUS_ALE		39
-#define BUS_RD		40
-#define BUS_WR		41
 
 #define USART0_RX	0
 #define USART0_TX	1
