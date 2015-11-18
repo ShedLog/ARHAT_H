@@ -32,7 +32,7 @@
 #  define TIME_ISR               OVF    /* what interrupt name using for this timer                   */
 #endif
 
-volatile uint32_t       ovf_count   = 0UL;
+volatile uint32_t       timer0_overflow_count   = 0UL;
 
 /**
  * Timer interrupt by Overflow Flag up each (TIMER_TICK_MCS*TIMER_MAX_COUNT) microseconds.
@@ -69,18 +69,18 @@ ISR(ISRtimer(TIME_DEFAULT, TIME_ISR), ISR_NAKED)
     "    in r24,__SREG__\n\t"
     "    push r24\n\t"
 
-    "    lds r24,ovf_count\n\t"
-    "    lds r25,ovf_count+1\n\t"
+    "    lds r24,timer0_overflow_count\n\t"
+    "    lds r25,timer0_overflow_count+1\n\t"
     "    adiw r24,1\n\t"
-    "    sts ovf_count,r24\n\t"
-    "    sts ovf_count+1,r25\n\t"
+    "    sts timer0_overflow_count,r24\n\t"
+    "    sts timer0_overflow_count+1,r25\n\t"
     "    clr r25\n\t"
-    "    lds r24,ovf_count+2\n\t"
+    "    lds r24,timer0_overflow_count+2\n\t"
     "    adc r24,r25\n\t"
-    "    sts ovf_count+2,r24\n\t"
-    "    lds r24,ovf_count+3\n\t"
+    "    sts timer0_overflow_count+2,r24\n\t"
+    "    lds r24,timer0_overflow_count+3\n\t"
     "    adc r24,r25\n\t"
-    "    sts ovf_count+3,r24\n\t"
+    "    sts timer0_overflow_count+3,r24\n\t"
 /*
  * Если верно подобрать константу для вычитания вместо сложений,
  * то можно сэкономить 1 регистр и его push/pop!
@@ -116,7 +116,7 @@ uint32_t getOvfCount()
   uint32_t      _count;
   
   cli();
-  _count = ovf_count;
+  _count = timer0_overflow_count;
   SREG = _sreg;
   
   return _count;

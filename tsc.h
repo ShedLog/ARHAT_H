@@ -253,6 +253,14 @@ void pulse_start(uint8_t pulseID, uint8_t pin, TSC_Time timeout)
 #ifndef _ADC_H_
 #define _ADC_H_ 1
 
+// @TODO: требует окончательного тестирования процедуры обработчика прерываний от АЦП
+// для массива потоковой оцифровки через прерывания.
+typedef struct {
+  uint8_t    pin;
+  uint8_t    isReady;
+  uint16_t   value;
+} ADCvalue;
+
 volatile uint8_t    adcCurrent = 0;
 ADCvalue            adcVals[MAX_ADC];
 

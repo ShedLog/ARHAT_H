@@ -11,7 +11,7 @@
  *   Требуется сохранять тег @author при любых изменениях. Можете дописать свой.
  * 
  * This is free software, not any pay. But you may donate some money to phone +7-951-388-2793
- * Бесплатно. Но автор принимает пожертвования и благодарности по тел. +7-951-388-2793.
+ * Бесплатно. Но автор принимает пожертвования на тел. +7-951-388-2793.
  * 
  * Thanks:
  *  More parts was taked from this authors:
@@ -142,8 +142,10 @@
 // Описание ножек Мега2560. Добавлять распиновку плат тут "по образцу"
 #if defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
 #  include "arhat_pins2560.h"             // special macros for each pin Arduino Mega board
+#elif defined(__AVR_328P__)
+#  include "arhat_pins328.h"
 #else
-#  include "arhat_pins328.h" 
+#  error "*** ERROR! Unknown processor type! Add your pins file into arhat.h before use it ***"
 #endif
 
 /* ============= private level 2. NOT USE IT in your sketches !!! ============= */
@@ -199,7 +201,7 @@
 // ========================================================================== //
 // Public section: macros for use with constants pin numbers only!            //
 // ========================================================================== //
-// may use with standart macros for registers and bits names from <avr/io.h>  //
+// may use with standard macros for registers and bits names from <avr/io.h>  //
 // МАКРОСЫ ДЛЯ ИСПОЛЬЗОВАНИЯ -- ТУТ. Публичная секция. Номер пина - константа //
 
 // Классика битовых операций. Дубликаты из разных мест:
@@ -210,6 +212,7 @@
 #define bitClear(value, bit)           ((value) &= ~(_BV(bit)))
 #define bitWrite(value, bit, bitvalue) (bitvalue ? bitSet(value, bit) : bitClear(value, bit))
 
+// Совместимость с Cyberlib.h:
 #define D_In(p)         (_d_in(p))
 #define D_Out(p)        (_d_out(p))
 #define D_High(p)       (_d_high(p))
@@ -366,9 +369,9 @@
 //
 // examples for set ADC registers:
 // ===============================
-// admux1Channel(admuxSrc(110), analog5, ADC_RIGHT);
-// admux2Channel(admuxSrc(AREF),analog10, analog11, ADC_LEFT);
-// admux2Gain(admuxSrc(AVCC), analog0, analog1, GAIN_200, ADC_LEFT);
+// admux1Channel(admuxSrc(110), analog5, ADC_RIGHT);                 -- поставить АЦП в режим сравнения с опорным в 1.1в, читать 5 вход, значения 0..1023
+// admux2Channel(admuxSrc(AREF),analog10, analog11, ADC_LEFT);       -- сравнивать с AREF, дифференциальный режим 10,11, значения домножать на 64.
+// admux2Gain(admuxSrc(AVCC), analog0, analog1, GAIN_200, ADC_LEFT); -- сравнивать с Vсс, предусилитель 200х, дифф. режим 0,1; домножать на 64.
 //
 
 // ============= wait without delay ============ //
@@ -416,6 +419,7 @@
 // ================================================================= //
 /**
  * INLINE: 8-bit counter (up to 256*3 F_CPU) 16Mhz:[0.1875 .. 48] mcsec.
+ * Короткие задержки по 3 цикла ЦПУ (кратно 187.5 нсек)
  */
 #define delayMicro8(__count)    \
   __asm__ __volatile__ (        \
@@ -426,7 +430,8 @@
         )
 
 /**
- * I(NLINE: 16-bit counter: up to 65535*4 F_CPU for 16Mhz:[0.1875 .. 12287.8125] mcsec.
+ * INLINE: 16-bit counter: up to 65535*4 F_CPU for 16Mhz:[0.1875 .. 12287.8125] mcsec.
+ * Короткие задержки по 4 цикла ЦПУ (кратно 250 нсек)
  */
 #define delayMicro16(__count) \
   __asm__ __volatile__ (      \
@@ -447,29 +452,16 @@ extern "C" {
 #define degrees(rad)            ((rad)*RAD_TO_DEG)
 #define sq(x)                   ((x)*(x))
 
-// @see arhat_time.c
+// @see arhat.c
 
-extern volatile uint32_t ovf_count;
+extern volatile uint32_t timer0_overflow_count;
 
 void          time_init(void);                  // init timer with TIME_DEFAULT section in arhat_time.c
 uint32_t      time_micros(void);                // microseconds upto 1.19 hour
 uint32_t      time_millis(void);                // milliseconds upto 49.7 days
 void          time_delay(unsigned long);        // delay in milliseconds upto 49.7 days
 void          time_delay16(uint16_t);           // delay in milliseconds upto 65.5 sec. only
-uint32_t      getOvfCount(void);		// cli() .. sei() getter.
-// @TODO void          time_delayMS(unsigned int us);    // not present yet.
-
-// @see arhat_adc.c
-
-typedef struct {
-  uint8_t    pin;
-  uint8_t    isReady;
-  uint16_t   value;
-} ADCvalue;
-
-extern          ADCvalue   adcVals[];           // array ADC pins for background reading. If need - define it in your sketches
-extern          uint8_t    maxValues;           // max count for array adcVals, if need ...
-extern volatile uint8_t    adcCurrent;          // for interrupt routine: current read ADC pin.
+uint32_t      getOvfCount(void);		        // cli() .. sei() getter.
 
 uint16_t adc_read(uint8_t);                     // ADC read analog pin with waiting to ready. Not by interrupt!
 
@@ -481,31 +473,36 @@ void loop(void);
 } // extern "C"
 #endif
 
+#if (Arduino.h == 1)
+// ================================================================================================================== //
+//                      РЕЖИМ оптимизации типовых скетчей, написанных с использованием Wiring:                        //
+// ------------------------------------------------------------------------------------------------------------------ //
+// замена типовых функций на макросы. Номера пинов платы - только через числовые константы. НЕ в памяти!              //
+// ================================================================================================================== //
+
 #define pinMode(p,m)            ((m)==OUTPUT? pinModeOut(p) : pinModeIn(p))
 #define digitalRead(p)          (pinRead(p))
 #define digitalWrite(p,v)       ((v)? pinOutHigh(p) : pinOutLow(p))
 #define turnOffPWM(t)           (pwmOff(p))
 #define analogRead(p)           (adc_read(p))
 #define analogWrite(p,v)        (pwmWrite(p,v))
-// @TODO: #define pulseIn(p,v,t)          ()
 
-//#define digitalPinToPort(P)     (pinOutReg(P))
-//#define digitalPinToBitMask(P)  (pinSetMask(P))
-// @TODO: #define digitalPinToTimer(P)    ()
-//#define analogInPinToBit(P)     (P)
-//#define portOutputRegister(P)   ( (volatile uint8_t *)(&pinOutReg(P) )
-//#define portInputRegister(P)    ( (volatile uint8_t *)(&pinInReg(P)  )
-//#define portModeRegister(P)     ( (volatile uint8_t *)(&pinDirReg(P) )
+#define digitalPinToPort(P)     (pinOutReg(P))
+#define digitalPinToBitMask(P)  (pinSetMask(P))
+#define digitalPinToTimer(P)    (pwmGetTimer(P))
+#define analogInPinToBit(P)     (P)
+#define portOutputRegister(P)   ( (volatile uint8_t *)(&pinOutReg(P) )
+#define portInputRegister(P)    ( (volatile uint8_t *)(&pinInReg(P)  )
+#define portModeRegister(P)     ( (volatile uint8_t *)(&pinDirReg(P) )
 
-// @see arhat_time.c timer and delay functions redeclarations
 #define millis()                     time_millis()
 #define micros()                     time_micros()
-#define delay(ms)                    time_delay16(ms)   // upto 65.5 sec. only!
-//#define delayMicroseconds(us)        time_delayMS(us)
+#define delay(ms)                    time_delay16(ms)           // upto 65.5 sec. only!
+#define delayMicroseconds(us)        delayMicro16((us)<<2)      // for 16Mhz CPU only!
 
 #ifdef __cplusplus
 
-// not released yet. For compatible:    
+// not released yet. From Wiring for compatible:
 #include <stdbool.h>
 typedef bool boolean;           // need in WString.h, WCharacter.h !
 
@@ -523,6 +520,14 @@ typedef bool boolean;           // need in WString.h, WCharacter.h !
 // need redefined after all includes .cpp headers!
 #define time_init()             init()
 
+#elif (Arduino.h == 2)
+// ================================================================================================================== //
+//                         РЕЖИМ совместимости с Wiring, но без подключения самого Wiring:                            //
+// ------------------------------------------------------------------------------------------------------------------ //
+// Возможность работы с цифровыми пинами, номера которых хранятся в памяти, через вызовы функций Wiring               //
+// ================================================================================================================== //
+
+#endif
 // ============= END ============ //
 
 #endif // ifdef _ARHAT_H_
