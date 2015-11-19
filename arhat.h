@@ -3,6 +3,25 @@
  * version 1.0 for ATmega2560 only!
  * Библиотека для уменьшения размеров скетчей и улучшения их работы
  *
+ * Подключение библиотеки:
+ * 1. ПЕРЕД подключением этой библиотеки можно, но не обязательно указать режим работы в виде определения константы ARHAT_MODE:
+ *    Если надо, то это пишется первой строкой скетча:
+ *    #define ARHAT_MODE 1 // режим совместимости с Wiring. Все типовые функции работы с пинами будут из него.
+ *    #define ARHAT_MODE 2 // режим имитации команд Wiring. Все типовые функции с пинами заменяются макросами отсюда.
+ * 2. Команду #include "arhat.h" надо писать второй в скетче.
+ * Примечания:
+ *  а) Определять ARHAT_MODE - необязательно. Если его нет, по умолчанию будет режим 2
+ *  б) В режиме "2" все номера пинов нельзя брать из переменных! Только константные значения. Иначе будет ошибка компиляции скетча.
+ *  d) В режиме "2" не определена функция pulseIn()! Вместо неё есть замер длительностей по прерываниям PCINT2 для Mega2560 в tsc.h
+ *
+ * Примеры подключения:
+ * 1. Режим 2 по умолчанию: первая строка скетча:
+ * #include "arhat.h"
+ *
+ * 2. Режим совместимости с Wiring (первые 2 строки скетча):
+ * #define ARHAT_MODE 1
+ * #include "arhat.h"
+ *
  * @author Arhat109-20150604(started). arhat109@mail.ru
  * @license:
  *   1. This is a free software for any using and distributing without any warranties.
@@ -29,10 +48,6 @@
 
 #ifndef _ARHAT_H_
 #define _ARHAT_H_
-
-// Blocking. Not used standart Arduino.h header!
-// Режим минимизации кода через константные номера пинов: отключаем хидер Arduino.h
-#define Arduino_h       1
 
 // Schema all default includes for this file. Simple search if need
 // Схема всех подключаемых хидеров. Для справки, дабы проще искать
@@ -205,8 +220,8 @@
 // МАКРОСЫ ДЛЯ ИСПОЛЬЗОВАНИЯ -- ТУТ. Публичная секция. Номер пина - константа //
 
 // Классика битовых операций. Дубликаты из разных мест:
-#define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
-#define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
+#define cbi(sfr, bit)                  (_SFR_BYTE(sfr) &= ~_BV(bit))
+#define sbi(sfr, bit)                  (_SFR_BYTE(sfr) |= _BV(bit))
 #define bitRead(value, bit)            (((value) >> (bit)) & 0x01)
 #define bitSet(value, bit)             ((value) |= (_BV(bit)))
 #define bitClear(value, bit)           ((value) &= ~(_BV(bit)))
@@ -241,7 +256,7 @@
 #define pinRead(p)      (D_Read(p))
 
 // Setup(): Set pin to input with pullup resistor. Пин на ввод с подтяжкой к +5В:
-#define pinModePullIn(p) { pinModeIn(p); pinOutHigh(p); }
+#define pinModePullIn(p) (pinModeOut(p), pinOutHigh(p), pinModeIn(p))
 
 /* =========== Timer and PWM works. Работа с таймерами и ШИМ 1 командой ============= */
 
@@ -463,7 +478,7 @@ void          time_delay(unsigned long);        // delay in milliseconds upto 49
 void          time_delay16(uint16_t);           // delay in milliseconds upto 65.5 sec. only
 uint32_t      getOvfCount(void);		        // cli() .. sei() getter.
 
-uint16_t adc_read(uint8_t);                     // ADC read analog pin with waiting to ready. Not by interrupt!
+uint16_t      adc_read(uint8_t);                // ADC read analog pin with waiting to ready. Not by interrupt!
 
 // ============ standart sketches defines ============= //
 void setup(void);
@@ -473,14 +488,28 @@ void loop(void);
 } // extern "C"
 #endif
 
-#if (Arduino.h == 1)
+#if defined(ARHAT_MODE) && (ARHAT_MODE == 1)
+// ================================================================================================================== //
+//                         РЕЖИМ совместимости с Wiring, но без подключения самого Wiring:                            //
+// ------------------------------------------------------------------------------------------------------------------ //
+// Возможность работы с цифровыми пинами, номера которых хранятся в памяти, через вызовы функций Wiring               //
+// ================================================================================================================== //
+
+#include "Arduino.h"
+
+#elif !defined(ARHAT_MODE) || (ARHAT_MODE == 2)
+
 // ================================================================================================================== //
 //                      РЕЖИМ оптимизации типовых скетчей, написанных с использованием Wiring:                        //
 // ------------------------------------------------------------------------------------------------------------------ //
 // замена типовых функций на макросы. Номера пинов платы - только через числовые константы. НЕ в памяти!              //
 // ================================================================================================================== //
 
-#define pinMode(p,m)            ((m)==OUTPUT? pinModeOut(p) : pinModeIn(p))
+// Blocking. Not used standart Arduino.h header!
+// Режим минимизации кода через константные номера пинов: отключаем хидер Arduino.h
+#define Arduino_h       1
+
+#define pinMode(p,m)            ((m)==OUTPUT? pinModeOut(p) : ((m)==INPUT? pinModeIn(p) : (pinModePullIn(p))))
 #define digitalRead(p)          (pinRead(p))
 #define digitalWrite(p,v)       ((v)? pinOutHigh(p) : pinOutLow(p))
 #define turnOffPWM(t)           (pwmOff(p))
@@ -520,14 +549,10 @@ typedef bool boolean;           // need in WString.h, WCharacter.h !
 // need redefined after all includes .cpp headers!
 #define time_init()             init()
 
-#elif (Arduino.h == 2)
-// ================================================================================================================== //
-//                         РЕЖИМ совместимости с Wiring, но без подключения самого Wiring:                            //
-// ------------------------------------------------------------------------------------------------------------------ //
-// Возможность работы с цифровыми пинами, номера которых хранятся в памяти, через вызовы функций Wiring               //
-// ================================================================================================================== //
+#else
+# error "*** ERROR! Unknown mode for arhat.h ***"
+#endif // ARHAT_MODE
 
-#endif
 // ============= END ============ //
 
 #endif // ifdef _ARHAT_H_
