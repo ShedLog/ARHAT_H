@@ -156,9 +156,11 @@
 // Mega2560 only. Add other version Arduino before error section
 // Описание ножек Мега2560. Добавлять распиновку плат тут "по образцу"
 #if defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
-#  include "arhat_pins2560.h"             // special macros for each pin Arduino Mega board
-#elif defined(__AVR_328P__)
-#  include "arhat_pins328.h"
+// special macros for each pin Arduino Mega board
+#  include "arhat_pins2560.h"
+#elif defined(__AVR_48P__) || defined(__AVR_88P__) || defined(__AVR_168P__) || defined(__AVR_328P__)
+// special macros for UNO at Atmega328p and may be some else board at this CPU
+#  include "arhat_pins328p.h"
 #else
 #  error "*** ERROR! Unknown processor type! Add your pins file into arhat.h before use it ***"
 #endif

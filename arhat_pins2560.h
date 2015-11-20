@@ -1,6 +1,17 @@
 /**
  * pins definition for ATmega2560 for use in macros "Arhat.h"
  * 
+ * Description macros, consists 2 parts
+ * Part One:
+ * 0. global max constants and convert macros.
+ * 1. pinXX    -- macros for pin numbers as on Arduino board and additions numbers if it need
+ * 2. AnalogXX -- macros for local analog pin numbers from 0 always
+ * 3. RESET,XTAL,USART0_RX,..etc. -- special names for Arduino board pin numbers for further simlper using
+ * 4. timer, adc,..so on special macros it use common pin numbers for converting pin to timer and etc.
+ * 5. special devices constants
+ * PART
+ * Regular definition for each pin whoose may be use as digital pin to convert into PORT and BIT standard macros from io.h.
+ * 
  * @author Arhat109-20150604. arhat109@mail.ru
  * @license:
  *   1. This is a free software for any using and distributing without any warranties.
@@ -10,14 +21,31 @@
 
 #include <stdint.h>
 
+// PART ONE:
+
+// ----------------------------------------------------------------------------------------------------------------- //
+// Количество цифровых и пр. контактов платы БЕЗ аналоговых входов (они на платах как правило нумерованы отдельно!   //
+// Общая нумерация аналоговых входов идет ПОСЛЕ цифровых входов платы                                                //
+// ----------------------------------------------------------------------------------------------------------------- //
 #define ARDUINO_MEGA_PINS           70
-#define NUM_DIGITAL_PINS            ARDUINO_MEGA_PINS
+#define NUM_DIGITAL_PINS            54
 #define MAX_ANALOG_INPUTS           16
-#define analogInputToDigitalPin(p)  ((p < 16) ? (p) + 54 : -1)
+#define START_ANALOG_PIN_NUMBER     NUM_DIGITAL_PINS
+#define analogInputToDigitalPin(p)  ((p < MAX_ANALOG_INPUTS) ? (p) + START_ANALOG_PIN_NUMBER : -1)
 #define digitalPinHasPWM(p)         (((p) >= 2 && (p) <= 13) || ((p) >= 44 && (p)<= 46))
 
-/** pin number at Arduino Mega board              */
-/** second and other function on this Arduino pin in comments @see below */
+// ----------------------------------------------------------------------------------------------------------------- //
+// pin number at Arduino Mega board                                                                                  //
+// second and other function on this Arduino pin in comments @see below                                              //
+// ----------------------------------------------------------------------------------------------------------------- //
+// Макроопределения констант - номеров контактов платы в разъемах. Традиционно нумерация начинается с нуля.          //
+// Аналоговые пины имеют нумерацию как продолжение за последним, 54-м номером на плате.                              //
+// Здесь же даны макроопределения по альтернативным функциям контактов с переводом названия в общий номер контакта   //
+// К каждому контакту платы дан комментарий по его порту и биту и альтернативным функциям контакта                   //
+//                                                                                                                   //
+// pinLed -- ВНИМАТЕЛЬНО! Этот контакт платы нельзя использовать как вход! На нем запаян диагностический светодиод   //
+// ----------------------------------------------------------------------------------------------------------------- //
+ 
 #define pinLed	13	// PB 7 ** pin13 + PWM13 + T0outA + T1outC + PC_INT_7 !!! INTERNAL LED! Can't be input pin!!! **
 
 #define pin0	0	// PE 0 ** pin0 + USART0_RX + PC_INT_8 **
@@ -91,6 +119,116 @@
 #define pin68	68	// PK 6 ** Analog14 + PC_INT_22 **
 #define pin69	69	// PK 7 ** Analog15 + PC_INT_23 **
 
+// Alternate names for pins by spec. functions:
+
+#define pwm2	2
+#define pwm3	3
+#define pwm4	4
+#define pwm5	5
+#define pwm6	6
+#define pwm7	7
+#define pwm8	8
+#define pwm9	9
+#define pwm10	10
+#define pwm11	11
+#define pwm12	12
+#define pwm13	13	// using as timer 0 channel A only! You must to use psevdoname T1C for timer 1 channel C on pin 13!
+
+#define Analog0		START_ANALOG_PIN_NUMBER + 0
+#define Analog1		START_ANALOG_PIN_NUMBER + 1
+#define Analog2		START_ANALOG_PIN_NUMBER + 2
+#define Analog3		START_ANALOG_PIN_NUMBER + 3
+#define Analog4		START_ANALOG_PIN_NUMBER + 4
+#define Analog5		START_ANALOG_PIN_NUMBER + 5
+#define Analog6		START_ANALOG_PIN_NUMBER + 6
+#define Analog7		START_ANALOG_PIN_NUMBER + 7
+#define Analog8		START_ANALOG_PIN_NUMBER + 8
+#define Analog9		START_ANALOG_PIN_NUMBER + 9
+#define Analog10	START_ANALOG_PIN_NUMBER + 10
+#define Analog11	START_ANALOG_PIN_NUMBER + 11
+#define Analog12	START_ANALOG_PIN_NUMBER + 12
+#define Analog13	START_ANALOG_PIN_NUMBER + 13
+#define Analog14	START_ANALOG_PIN_NUMBER + 14
+#define Analog15	START_ANALOG_PIN_NUMBER + 15
+
+#define BUS_AD0		22
+#define BUS_AD1		23
+#define BUS_AD2		24
+#define BUS_AD3		25
+#define BUS_AD4		26
+#define BUS_AD5		27
+#define BUS_AD6		28
+#define BUS_AD7		29
+#define BUS_A8		37
+#define BUS_A9		36
+#define BUS_A10		35
+#define BUS_A11		34
+#define BUS_A12		33
+#define BUS_A13		32
+#define BUS_A14		31
+#define BUS_A15		30
+#define BUS_ALE		39
+#define BUS_RD		40
+#define BUS_WR		41
+
+#define USART0_RX	0
+#define USART0_TX	1
+#define USART1_RX	19
+#define USART1_TX	18
+#define USART2_RX	17
+#define USART2_TX	16
+#define USART3_RX	15
+#define USART3_TX	14
+#define I2C_SDA		20
+#define I2C_SCL		21
+#define SPI_MISO	50
+#define SPI_MOSI	51
+#define SPI_SCK		52
+#define SPI_SS		53
+#define JTAG_TDI	61
+#define JTAG_TDO	60
+#define JTAG_TMS	59
+#define JTAG_TCK	58
+
+#define AIN1		5
+
+#define INT_0		21
+#define INT_1		20
+#define INT_2		19
+#define INT_3		18
+#define INT_4		2
+#define INT_5		3
+
+#define PC_INT_0	53
+#define PC_INT_1	52
+#define PC_INT_2	51
+#define PC_INT_3	50
+#define PC_INT_4	10
+#define PC_INT_5	11
+#define PC_INT_6	12
+#define PC_INT_7	13
+
+#define PC_INT_8	0
+#define PC_INT_9	15
+#define PC_INT_10	14
+/**
+ * You may define it if your board have this pins!
+#define PC_INT_11
+#define PC_INT_12
+#define PC_INT_13
+#define PC_INT_14
+#define PC_INT_15
+*/
+
+#define PC_INT_16	62
+#define PC_INT_17	63
+#define PC_INT_18	64
+#define PC_INT_19	65
+#define PC_INT_20	66
+#define PC_INT_21	67
+#define PC_INT_22	68
+#define PC_INT_23	69
+
 // ============= special defines for ATmega constants ============ //
 // timer interrupt names and flag bits
 #define TIF_OVF                 (uint8_t)1
@@ -118,13 +256,7 @@
 #define PWM_NORMAL      2
 #define PWM_INVERSE     3
 
-// SPECIAL VIRTUAL PIN13 (T1C) for Timer1 channel C using:
-#define DREGT1C         DDRB
-#define OREGT1C         PORTB
-#define IREGT1C         PINB
-#define BSETT1C         SET_MASK_7
-#define BCLRT1C         CLR_MASK_7
-
+// timer specific macroses
 #define getTimer2       3       // T3 channel B
 #define getTimer3       3       // T3 channel C
 #define getTimer4       0       // 8 bit, T0 channel B
@@ -225,92 +357,16 @@
 #define GAIN_10                  0
 #define GAIN_200                 1
 
-#define Analog0		0
-#define Analog1		1
-#define Analog2		2
-#define Analog3		3
-#define Analog4		4
-#define Analog5		5
-#define Analog6		6
-#define Analog7		7
-#define Analog8		8
-#define Analog9		9
-#define Analog10	10
-#define Analog11	11
-#define Analog12	12
-#define Analog13	13
-#define Analog14	14
-#define Analog15	15
-
-#define BUS_AD0		22
-#define BUS_AD1		23
-#define BUS_AD2		24
-#define BUS_AD3		25
-#define BUS_AD4		26
-#define BUS_AD5		27
-#define BUS_AD6		28
-#define BUS_AD7		29
-#define BUS_A8		37
-#define BUS_A9		36
-#define BUS_A10		35
-#define BUS_A11		34
-#define BUS_A12		33
-#define BUS_A13		32
-#define BUS_A14		31
-#define BUS_A15		30
-#define BUS_ALE		39
-#define BUS_RD		40
-#define BUS_WR		41
-
-#define USART0_RX	0
-#define USART0_TX	1
-#define USART1_RX	19
-#define USART1_TX	18
-#define USART2_RX	17
-#define USART2_TX	16
-#define USART3_RX	15
-#define USART3_TX	14
-#define I2C_SDA		20
-#define I2C_SCL		21
-#define SPI_MISO	50
-#define SPI_MOSI	51
-#define SPI_SCK		52
-#define SPI_SS		53
-#define JTAG_TDI	61
-#define JTAG_TDO	60
-#define JTAG_TMS	59
-#define JTAG_TCK	58
-
-#define AIN1		5
-
-#define INT_0		21
-#define INT_1		20
-#define INT_2		19
-#define INT_3		18
-#define INT_4		2
-#define INT_5		3
-
-#define PC_INT_0	53
-#define PC_INT_1	52
-#define PC_INT_2	51
-#define PC_INT_3	50
-#define PC_INT_4	10
-#define PC_INT_5	11
-#define PC_INT_6	12
-#define PC_INT_7	13
-#define PC_INT_8	0
-#define PC_INT_9	15
-#define PC_INT_10	14
-#define PC_INT_16	62
-#define PC_INT_17	63
-#define PC_INT_18	64
-#define PC_INT_19	65
-#define PC_INT_20	66
-#define PC_INT_21	67
-#define PC_INT_22	68
-#define PC_INT_23	69
+// PART TWO:
 
 // ************ All special macros by pin numbers ************ //
+// SPECIAL VIRTUAL PIN13 (T1C) for Timer1 channel C using:
+#define DREGT1C         DDRB
+#define OREGT1C         PORTB
+#define IREGT1C         PINB
+#define BSETT1C         SET_MASK_7
+#define BCLRT1C         CLR_MASK_7
+
 // PE 0 ** pin0 + USART0_RX + PC_INT_8 **
 #define D0_In		DDRE  &= CLR_MASK_0
 #define D0_Out		DDRE  |= SET_MASK_0
@@ -1222,7 +1278,7 @@
 #define BCLR69		CLR_MASK_7
 
 /* ******************************************************************** */
-/* not used in Arduino not a pin!                                       */
+/* not used in Arduino Mega2560 not a pin!                              */
 /* If you have this pin on your board add it numbers in this correctly! */
 /* ******************************************************************** */
 /*

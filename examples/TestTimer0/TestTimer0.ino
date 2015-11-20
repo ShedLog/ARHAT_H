@@ -42,7 +42,7 @@
 
 //
 // test working time interrupt and its overflow count only:
-// +1000 ovf_count == 1024 milli seconds = 1.024sec!
+// +1000 timer0_overflow_count == 1024 milli seconds = 1.024sec!
 //
 static unsigned long curCount=0UL;
 void testOvfCount( uint16_t onTicks, uint16_t offTicks )

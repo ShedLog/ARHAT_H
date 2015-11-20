@@ -105,8 +105,8 @@ time_millis	KEYWORD2
 time_delay	KEYWORD2
 time_delay16	KEYWORD2
 
-ovf_count	KEYWORD2
-getOvfCount	KEYWORD2
+timer0_overflow_count	KEYWORD2
+getOvfCount		KEYWORD2
 
 tsc_init	KEYWORD2
 tsc_next	KEYWORD2

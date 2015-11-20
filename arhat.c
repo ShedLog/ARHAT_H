@@ -48,13 +48,13 @@ volatile uint32_t       timer0_overflow_count   = 0UL;
  */
 ISR(ISRtimer(TIME_DEFAULT, TIME_ISR), ISR_NAKED)
 {
-//    ovf_count++;
+//    timer0_overflow_count++;
 // now run events dispatcher:
 //  { uint8_t     i = eventsCount;
 //    Event     * ptr = &Events[0];
 //
 //    while( i ){
-//      if((ptr->start - (uint16_t)ovf_count) > ptr->timeout)
+//      if((ptr->start - (uint16_t)timer0_overflow_count) > ptr->timeout)
 //      {
 //        ptr->callback( ptr->data );
 //      }
@@ -84,18 +84,18 @@ ISR(ISRtimer(TIME_DEFAULT, TIME_ISR), ISR_NAKED)
 /*
  * Если верно подобрать константу для вычитания вместо сложений,
  * то можно сэкономить 1 регистр и его push/pop!
-    "    lds  r24,ovf_count\n\t"
+    "    lds  r24,timer0_overflow_count\n\t"
     "    subi r24,lo8(-1)\n\t"
-    "    sts  ovf_count,r24\n\t"
-    "    lds  r24,ovf_count+1\n\t"
+    "    sts  timer0_overflow_count,r24\n\t"
+    "    lds  r24,timer0_overflow_count+1\n\t"
     "    sbci r24,lo8(-1)\n\t"
-    "    sts  ovf_count+1,r25\n\t"
-    "    lds  r24,ovf_count+2\n\t"
+    "    sts  timer0_overflow_count+1,r25\n\t"
+    "    lds  r24,timer0_overflow_count+2\n\t"
     "    sbci r24,lo8(-1)\n\t"
-    "    sts  ovf_count+2,r24\n\t"
-    "    lds  r24,ovf_count+3\n\t"
+    "    sts  timer0_overflow_count+2,r24\n\t"
+    "    lds  r24,timer0_overflow_count+3\n\t"
     "    sbci r24,lo8(-1)\n\t"
-    "    sts  ovf_count+3,r24\n\t"
+    "    sts  timer0_overflow_count+3,r24\n\t"
 */
     "    pop r24\n\t"
     "    out __SREG__,r24\n\t"
@@ -138,7 +138,7 @@ uint32_t time_micros()             // return in r22..r25
 
     // read all into local: volatile!
     cli();
-      micro = ovf_count;		// not use h-byte!
+      micro = timer0_overflow_count;		// not use h-byte!
       timer = timerCount(TIME_DEFAULT);
 //      tov = timerIFlag(TIME_DEFAULT,OVF);	// bit0! =={0,1} only!
       if ( timerIFlag(TIME_DEFAULT,OVF) && (timer<255) ){ micro++; }
@@ -156,9 +156,9 @@ uint32_t time_micros()             // return in r22..r25
     "  in r26,__SREG__          ;1 oldSREG = SREG\n\t"
     "  cli                      ;1\n\t"
     "  in r22,0x26              ;1 timer = timerCount(TIME_DEFAULT)\n\t"
-    "  lds r23,ovf_count        ;3 micro = (uint24_t)ovf_count;\n\t"
-    "  lds r24,ovf_count+1      ;3\n\t"
-    "  lds r25,ovf_count+2      ;3 now: {r22..25}=(micro<<8)+timer!\n\t"
+    "  lds r23,timer0_overflow_count        ;3 micro = (uint24_t)timer0_overflow_count;\n\t"
+    "  lds r24,timer0_overflow_count+1      ;3\n\t"
+    "  lds r25,timer0_overflow_count+2      ;3 now: {r22..25}=(micro<<8)+timer!\n\t"
     "  sbis 0x15,0              ;1/2 TOV==1? ->PС+1\n\t"
     "   rjmp .skip1\n\t"
     "  cpi  r22,lo8(-1)         ;1 ?!? timer == 255?\n\t"
@@ -215,7 +215,7 @@ uint32_t time_millis()
     SREG = oldSREG;
 
     timer = (TIME_TICK_MCS>1 ? timer<<TIME_SHIFT : timer>>TIME_SHIFT);
-    return (ovf_count * TIME_MCS2MS)+tov+(timer>1000? 1 : 0);
+    return (timer0_overflow_count * TIME_MCS2MS)+tov+(timer>1000? 1 : 0);
 }
 
 /**
