@@ -83,3 +83,29 @@ void tsc_step( TSC_Control *_tsc )
     }
   }
 }
+
+// метод "шаг цикла КА" в микросекундах по 4мксек [0,4,..1024мксек]:
+// параметр - указатель на состояние заданного КА.
+void tsc_microStep( TSC_Control *_tsc )
+{
+  // если задана таблица (нет - выключен!)
+  if( _tsc->table ){
+    // если событие, переключающее КА - наступило:
+    if( (((TSC_Time)timerCount(0))<<2) - _tsc->started_at >= _tsc->timeout )
+    {
+      // определяем место хранения структуры состояния КА
+      const TSC_Step * current PROGMEM = _tsc->table + _tsc->state;
+
+      // читаем и исполняем команду и получаем номер следующего состояния или нуль(+=1):
+      TSC_Command    command = (TSC_Command)pgm_read_word_near( &(current->command) );
+      TSC_Step_Count    next = (TSC_Step_Count)pgm_read_word_near( &(current->next) );
+
+      // и сразу устанавливаем следующий шаг КА и начало периода
+      tsc_next(_tsc, next);
+
+      // исполнение команды - последним. Её время выполнения ВХОДИТ в ожидание,
+      // допускается вызов tsc_next() из самой команды - принудительная смена состояния в команде
+      if( command ) { command(_tsc); }
+    }
+  }
+}

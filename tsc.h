@@ -101,6 +101,7 @@ void tsc_next( TSC_Control *_tsc, TSC_Step_Count _state );
 //void tsc_setWait ( TSC_Control *_tsc, TSC_Time       _wait  );
 
 void tsc_step( TSC_Control *_tsc );
+void tsc_microStep( TSC_Control *_tsc );        // шаг цикла КА в микросекундах по 4мксек [0,4,..1024мксек]
 
 // ================================================================================================================= //
 // Определения и реализация конечных автоматов для измерения длительностей сигналов на пинах прерывания PCINT2       //
