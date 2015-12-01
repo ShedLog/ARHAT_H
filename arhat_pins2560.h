@@ -1,6 +1,6 @@
 /**
  * pins definition for ATmega2560 for use in macros "Arhat.h"
- * 
+ *
  * Description macros, consists 2 parts
  * Part One:
  * 0. global max constants and convert macros.
@@ -11,7 +11,7 @@
  * 5. special devices constants
  * PART
  * Regular definition for each pin whoose may be use as digital pin to convert into PORT and BIT standard macros from io.h.
- * 
+ *
  * @author Arhat109-20150604. arhat109@mail.ru
  * @license:
  *   1. This is a free software for any using and distributing without any warranties.
@@ -45,7 +45,7 @@
 //                                                                                                                   //
 // pinLed -- ВНИМАТЕЛЬНО! Этот контакт платы нельзя использовать как вход! На нем запаян диагностический светодиод   //
 // ----------------------------------------------------------------------------------------------------------------- //
- 
+
 #define pinLed	13	// PB 7 ** pin13 + PWM13 + T0outA + T1outC + PC_INT_7 !!! INTERNAL LED! Can't be input pin!!! **
 
 #define pin0	0	// PE 0 ** pin0 + USART0_RX + PC_INT_8 **
@@ -150,6 +150,22 @@
 #define Analog13	START_ANALOG_PIN_NUMBER + 13
 #define Analog14	START_ANALOG_PIN_NUMBER + 14
 #define Analog15	START_ANALOG_PIN_NUMBER + 15
+
+// for PCINT0 redefine data
+#define PCINT0_DDR              DDRB
+#define PCINT0_PORT             PORTB
+#define PCINT0_PIN              PINB
+#define PCINT0_pin2number(p)    ((p)<50?(p)-6:53-(p))     // p=[53,52,51,50,10,11,12,(13)] pin13 only OUT! Not PCINT!
+
+// for PCINT1 has not redefine data!!! More pin hasn't Arduino Mega board .. sorry
+
+// for PCINT2 redefine data
+#define PCINT2_DDR              DDRK
+#define PCINT2_PORT             PORTK
+#define PCINT2_PIN              PINK
+#define PCINT2_pin2number(p)    ((p) - (START_ANALOG_PIN_NUMBER + 8)) // p=[62,63,64,65,66,67,68,69]]
+
+#define PCINT_pin2level(p)      ((p)<50? 0 : ((p)<62? 0 : 2))
 
 #define BUS_AD0		22
 #define BUS_AD1		23

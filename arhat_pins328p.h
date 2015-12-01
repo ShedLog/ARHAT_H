@@ -1,6 +1,6 @@
 /**
  * pins definition for  for use in macros "Arhat.h"
- * 
+ *
  * Description macros, consists 2 parts
  * Part One:
  * 0. global max constants and convert macros.
@@ -11,7 +11,7 @@
  * 5. special devices constants
  * PART
  * Regular definition for each pin whoose may be use as digital pin to convert into PORT and BIT standard macros from io.h.
- * 
+ *
  * @author Arhat109-20150604. arhat109@mail.ru
  * @license:
  *   1. This is a free software for any using and distributing without any warranties.
@@ -62,6 +62,27 @@
 #define Analog3		3
 #define Analog4		4
 #define Analog5		5
+
+// for PCINT0 redefine data
+#define PCINT0_DDR              DDRB
+#define PCINT0_PORT             PORTB
+#define PCINT0_PIN              PINB
+#define PCINT0_pin2number(p)    ((p)-8) // p=[8,9,10,11,12,13,14,15]
+
+// for PCINT1 redefine data
+#define PCINT1_DDR              DDRC
+#define PCINT1_PORT             PORTC
+#define PCINT1_PIN              PINC
+#define PCINT1_pin2number(p)    ((p)==16? 6 :(p)-START_ANALOG_PIN_NUMBER) // p=[17,18,19,20,21,22,16,-] .. 7 only!
+
+// for PCINT2 redefine data
+#define PCINT2_DDR              DDRD
+#define PCINT2_PORT             PORTD
+#define PCINT2_PIN              PIND
+#define PCINT2_pin2number(p)    (p) // p=[0,1,2,3,4,5,6,7]
+
+// converter pin to pcint level number 0,1,2
+#define pin2pcintLevel(p)       ((p)<8? 2 : ((p)<16? 0 : 1))
 
 // special pin names and its numbers for special functions:
 #define RESET	16
