@@ -19,92 +19,8 @@
  * This is free software, not any pay. But you may donate some money to phone +7-951-388-2793
  */
 
+#define ARHAT_C 1           // need for includes interrupt function in this file only.
 #include "arhat.h"
-
-#ifndef TIME_DEFAULT                    /* all defaults for F_CPU=16Mhz ONLY! */
-#  define TIME_DEFAULT             0
-#  define TIME_MAX_COUNTER       256    /* max conter+1                                               */
-#  define TIME_PRESCALLER         64
-#  define TIME_MODE                3    /* WGM10 = 1, WGM00 = 1 fast-PWM mode for timer0              */
-#  define TIME_TICK_MCS            4    /* 1 tick by prescaler:[0.25, 0.5, 4, 16, 64] in microseconds */
-#  define TIME_SHIFT               2    /* From prescaller: 1=>4, 8=>1, 64=>2, 256=>4, 1024=>6        */
-#  define TIME_MCS2MS      1024/1000    /* ==[16,128,1024,4096,16384]/1000 by prescaler               */
-#  define TIME_ISR               OVF    /* what interrupt name using for this timer                   */
-#endif
-
-volatile uint32_t       timer0_overflow_count   = 0UL;
-
-/**
- * Timer interrupt by Overflow Flag up each (TIMER_TICK_MCS*TIMER_MAX_COUNT) microseconds.
- * 
- * Пользуемся побайтовой арифметикой: считали - добавили - сохранили.
- * Экономим регистры и 3 команды (6 байт) от "С" реализации
- * 58 bytes, 40 cycles (2.5mcsec)
- * 
- * ISR(ISRtimer(TIME_DEFAULT, TIME_ISR), ISR_NAKED) после подстановок формирует это:
- * 
- * void __vector_ 23(void) __attribute__ ((signal, used, externally_visible)) __attribute__((naked));
- * void __vector_ 23(void)
- */
-ISR(ISRtimer(TIME_DEFAULT, TIME_ISR), ISR_NAKED)
-{
-//    timer0_overflow_count++;
-// now run events dispatcher:
-//  { uint8_t     i = eventsCount;
-//    Event     * ptr = &Events[0];
-//
-//    while( i ){
-//      if((ptr->start - (uint16_t)timer0_overflow_count) > ptr->timeout)
-//      {
-//        ptr->callback( ptr->data );
-//      }
-//      ptr++;
-//      i--;
-//    }
-//  }
-// reti;    
-  asm volatile(
-    "    push r24\n\t"
-    "    push r25\n\t"
-    "    in r24,__SREG__\n\t"
-    "    push r24\n\t"
-
-    "    lds r24,timer0_overflow_count\n\t"
-    "    lds r25,timer0_overflow_count+1\n\t"
-    "    adiw r24,1\n\t"
-    "    sts timer0_overflow_count,r24\n\t"
-    "    sts timer0_overflow_count+1,r25\n\t"
-    "    clr r25\n\t"
-    "    lds r24,timer0_overflow_count+2\n\t"
-    "    adc r24,r25\n\t"
-    "    sts timer0_overflow_count+2,r24\n\t"
-    "    lds r24,timer0_overflow_count+3\n\t"
-    "    adc r24,r25\n\t"
-    "    sts timer0_overflow_count+3,r24\n\t"
-/*
- * Если верно подобрать константу для вычитания вместо сложений,
- * то можно сэкономить 1 регистр и его push/pop!
-    "    lds  r24,timer0_overflow_count\n\t"
-    "    subi r24,lo8(-1)\n\t"
-    "    sts  timer0_overflow_count,r24\n\t"
-    "    lds  r24,timer0_overflow_count+1\n\t"
-    "    sbci r24,lo8(-1)\n\t"
-    "    sts  timer0_overflow_count+1,r25\n\t"
-    "    lds  r24,timer0_overflow_count+2\n\t"
-    "    sbci r24,lo8(-1)\n\t"
-    "    sts  timer0_overflow_count+2,r24\n\t"
-    "    lds  r24,timer0_overflow_count+3\n\t"
-    "    sbci r24,lo8(-1)\n\t"
-    "    sts  timer0_overflow_count+3,r24\n\t"
-*/
-    "    pop r24\n\t"
-    "    out __SREG__,r24\n\t"
-    "    pop r25\n\t"
-    "    pop r24\n\t"
-    "    reti\n\t"
-    ::
-  );
-}
 
 /**
  * Volatile read count TOV interrupt
@@ -330,8 +246,6 @@ void time_init()
 #define ADMUX_M1_a10a11		59
 #define ADMUX_M1_a10a12		60
 #define ADMUX_M1_a10a13		61
-
-void delay_us(uint8_t us) { while(--us>0); };
 
 /**
  * AnalogRead
