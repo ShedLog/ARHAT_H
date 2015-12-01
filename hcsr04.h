@@ -46,8 +46,8 @@ extern "C" {
 #define _START_TRIG(p)  startTrig##p (void *_tsc)
 #define START_TRIG(p)  _START_TRIG(p)
 
-#define HCSR04_START   4  // номер статуса КА для запуска замеров (вручную)
-#define HCVSR04_MAX_DISTANCE 5000       // предельно измеряемое расстояние.
+#define HCSR04_START   4                                // номер статуса КА для запуска замеров (вручную)
+#define HCSR04_MAX_DISTANCE 5000                        // предельно измеряемое расстояние.
 
 #ifndef _PULSE_H_
 #  include "tsc.h"

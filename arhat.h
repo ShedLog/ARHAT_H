@@ -1,6 +1,7 @@
 /**
  * Main header file for small sketchs by Arduino IDE
- * version 1.0 for ATmega2560 only!
+ * version 1.1 for ATmega2560, Atmega328p CPU
+ *
  * Библиотека для уменьшения размеров скетчей и улучшения их работы
  *
  * Подключение библиотеки:
@@ -221,6 +222,7 @@
 // may use with standard macros for registers and bits names from <avr/io.h>  //
 // МАКРОСЫ ДЛЯ ИСПОЛЬЗОВАНИЯ -- ТУТ. Публичная секция. Номер пина - константа //
 
+// Classic bit operation from wiring and some other libs
 // Классика битовых операций. Дубликаты из разных мест:
 #define cbi(sfr, bit)                  (_SFR_BYTE(sfr) &= ~_BV(bit))
 #define sbi(sfr, bit)                  (_SFR_BYTE(sfr) |= _BV(bit))
@@ -229,6 +231,7 @@
 #define bitClear(value, bit)           ((value) &= ~(_BV(bit)))
 #define bitWrite(value, bit, bitvalue) (bitvalue ? bitSet(value, bit) : bitClear(value, bit))
 
+// for users cyberlib.h
 // Совместимость с Cyberlib.h:
 #define D_In(p)         (_d_in(p))
 #define D_Out(p)        (_d_out(p))
@@ -236,6 +239,19 @@
 #define D_Low(p)        (_d_low(p))
 #define D_Inv(p)        (_d_inv(p))
 #define D_Read(p)       (_d_read(p))
+
+// defaults timer0 timers functions and interrupts such in wiring
+// Константы настройки таймера 0 совместимые с wiring: таймер работает по 4мксек.
+#ifndef TIME_DEFAULT                    /* all defaults for F_CPU=16Mhz ONLY! */
+#  define TIME_DEFAULT             0
+#  define TIME_MAX_COUNTER       256    /* max conter+1                                               */
+#  define TIME_PRESCALLER         64
+#  define TIME_MODE                3    /* WGM10 = 1, WGM00 = 1 fast-PWM mode for timer0              */
+#  define TIME_TICK_MCS            4    /* 1 tick by prescaler:[0.25, 0.5, 4, 16, 64] in microseconds */
+#  define TIME_SHIFT               2    /* From prescaller: 1=>4, 8=>1, 64=>2, 256=>4, 1024=>6        */
+#  define TIME_MCS2MS      1024/1000    /* ==[16,128,1024,4096,16384]/1000 by prescaler               */
+#  define TIME_ISR               OVF    /* what interrupt name using for this timer                   */
+#endif
 
 /* =========== Pin works. Работа с цифровыми входами и выходами 1 командой ============= */
 
@@ -447,7 +463,7 @@
         )
 
 /**
- * INLINE: 16-bit counter: up to 65535*4 F_CPU for 16Mhz:[0.1875 .. 12287.8125] mcsec.
+ * INLINE: 16-bit counter: up to 65535*4 F_CPU for 16Mhz:[0.25 .. 16383.75] mcsec.
  * Короткие задержки по 4 цикла ЦПУ (кратно 250 нсек)
  */
 #define delayMicro16(__count) \
@@ -469,18 +485,19 @@ extern "C" {
 #define degrees(rad)            ((rad)*RAD_TO_DEG)
 #define sq(x)                   ((x)*(x))
 
-// @see arhat.c
-
+// @see in this below or wiring.c by ARHAT_MODE:
 extern volatile uint32_t timer0_overflow_count;
+
+// @see arhat.c
 
 void          time_init(void);                  // init timer with TIME_DEFAULT section in arhat_time.c
 uint32_t      time_micros(void);                // microseconds upto 1.19 hour
 uint32_t      time_millis(void);                // milliseconds upto 49.7 days
 void          time_delay(unsigned long);        // delay in milliseconds upto 49.7 days
 void          time_delay16(uint16_t);           // delay in milliseconds upto 65.5 sec. only
-uint32_t      getOvfCount(void);		        // cli() .. sei() getter.
+uint32_t      getOvfCount(void);		        // cli() .. {sei()} getter.
 
-uint16_t      adc_read(uint8_t);                // ADC read analog pin with waiting to ready. Not by interrupt!
+uint16_t      adc_read(uint8_t);                // ADC read analog pin with waiting to ready. Not by interrupt! for interrupt reading @see tsc.h
 
 // ============ standart sketches defines ============= //
 void setup(void);
@@ -508,9 +525,10 @@ void loop(void);
 // ================================================================================================================== //
 
 // Blocking. Not used standart Arduino.h header!
-// Режим минимизации кода через константные номера пинов: отключаем хидер Arduino.h
+// Режим минимизации кода через константные номера пинов: отключаем хидер Arduino.h и переопределяем типовые функции в макросы
 #define Arduino_h       1
 
+// redefining all typical wiring functions and so on into this macros:
 #define pinMode(p,m)            ((m)==OUTPUT? pinModeOut(p) : ((m)==INPUT? pinModeIn(p) : (pinModePullIn(p))))
 #define digitalRead(p)          (pinRead(p))
 #define digitalWrite(p,v)       ((v)? pinOutHigh(p) : pinOutLow(p))
@@ -548,10 +566,78 @@ typedef bool boolean;           // need in WString.h, WCharacter.h !
 
 #endif // __cplusplus {compatible and not realised yet }
 
+// definition for timer 0 OVF count interrupt included for arhat.c ONLY!
+// Определение обработчика прерывания __vector_23() (timer 0 ovf count) подключается только для компиляции arhat.c
+#ifdef ARHAT_C
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+volatile uint32_t       timer0_overflow_count   = 0UL;
+
+/**
+ * Timer interrupt by Overflow Flag up each (TIMER_TICK_MCS*TIMER_MAX_COUNT) microseconds.
+ *
+ * Пользуемся побайтовой арифметикой: считали - добавили - сохранили.
+ * Экономим регистры и 3 команды (6 байт) от "С" реализации
+ * 58 bytes, 40 cycles (2.5mcsec)
+ *
+ * ISR(ISRtimer(TIME_DEFAULT, TIME_ISR), ISR_NAKED) после подстановок формирует это:
+ *
+ * void __vector_ 23(void) __attribute__ ((signal, used, externally_visible)) __attribute__((naked));
+ * void __vector_ 23(void)
+ */
+ISR(ISRtimer(TIME_DEFAULT, TIME_ISR), ISR_NAKED)
+{
+//    timer0_overflow_count++;
+// now run events dispatcher:
+//  { uint8_t     i = eventsCount;
+//    Event     * ptr = &Events[0];
+//
+//    while( i ){
+//      if((ptr->start - (uint16_t)timer0_overflow_count) > ptr->timeout)
+//      {
+//        ptr->callback( ptr->data );
+//      }
+//      ptr++;
+//      i--;
+//    }
+//  }
+// reti;
+  asm volatile(
+    "    push r24\n\t"
+    "    push r25\n\t"
+    "    in r24,__SREG__\n\t"
+    "    push r24\n\t"
+
+    "    lds r24,timer0_overflow_count\n\t"
+    "    lds r25,timer0_overflow_count+1\n\t"
+    "    adiw r24,1\n\t"
+    "    sts timer0_overflow_count,r24\n\t"
+    "    sts timer0_overflow_count+1,r25\n\t"
+    "    clr r25\n\t"
+    "    lds r24,timer0_overflow_count+2\n\t"
+    "    adc r24,r25\n\t"
+    "    sts timer0_overflow_count+2,r24\n\t"
+    "    lds r24,timer0_overflow_count+3\n\t"
+    "    adc r24,r25\n\t"
+    "    sts timer0_overflow_count+3,r24\n\t"
+    "    pop r24\n\t"
+    "    out __SREG__,r24\n\t"
+    "    pop r25\n\t"
+    "    pop r24\n\t"
+    "    reti\n\t"
+    ::
+  );
+}
+
+#endif // ARHAT_C
+
 // need redefined after all includes .cpp headers!
 #define time_init()             init()
 
-#else
+#else  // other ARHAT_MODE:
 # error "*** ERROR! Unknown mode for arhat.h ***"
 #endif // ARHAT_MODE
 
