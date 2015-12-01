@@ -104,7 +104,7 @@ void tsc_micro_next( TSC_Control *_tsc, TSC_Step_Count _state )
 
 // метод "шаг цикла КА" в микросекундах по 4мксек [0..65535] @see TSC_Time:
 // параметр - указатель на состояние заданного КА.
-void tsc_microStep( TSC_Control *_tsc )
+void tsc_micro_step( TSC_Control *_tsc )
 {
   // если задана таблица (нет - выключен!)
   if( _tsc->table ){

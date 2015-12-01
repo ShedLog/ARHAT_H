@@ -98,7 +98,8 @@ typedef struct {
 void tsc_init( TSC_Control *_tsc, const PROGMEM TSC_Step * _table, TSC_Step_Count _state );
 void tsc_next( TSC_Control *_tsc, TSC_Step_Count _state );
 void tsc_step( TSC_Control *_tsc );
-void tsc_microStep( TSC_Control *_tsc );        // шаг цикла КА в микросекундах по 4мксек [0,4,..1024мксек]
+void tsc_micro_next( TSC_Control *_tsc, TSC_Step_Count _state );
+void tsc_micro_step ( TSC_Control *_tsc );        // шаг цикла КА в микросекундах по 4мксек [0,4,..1024мксек]
 
 // ================================================================================================================= //
 // Определения и реализация конечных автоматов для аналоговой оцифровки сигналов через прерывания от ADC             //
