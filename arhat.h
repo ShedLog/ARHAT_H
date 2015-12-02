@@ -29,19 +29,19 @@
  *   2. You should keep author tag with any changes. May be with adding.
  *   Это свободное ПО для любого использования без каких-либо гарантий и претензий.
  *   Требуется сохранять тег @author при любых изменениях. Можете дописать свой.
- * 
+ *
  * This is free software, not any pay. But you may donate some money to phone +7-951-388-2793
  * Бесплатно. Но автор принимает пожертвования на тел. +7-951-388-2793.
- * 
+ *
  * Thanks:
  *  More parts was taked from this authors:
  *  Благодарности авторам, работы которых были активно использованы тут:
- * 
+ *
  * authors Arduino.h, avr/io.h and other distribs files.
  * authors this document: http://www.nongnu.org/avr-libc/user-manual/index.html
  * leshak, gregoryl  -- @see https://bitbucket.org/alxarduino/leshakutils
  * autors Cyberlib.h -- @see http://www.cyber-place.ru/showthread.php?p=3789#post3789
- * 
+ *
  * Кратко "как пользоваться" смотреть в комментариях к каждому определению тут.
  * v1.0 changes: #define _ARHAT_ 1 is deprecated and not use more.
  * Изменения: макрос _ARHAT_ определять больше не надо. Режим совместимости с Wiring не поддерживается.
@@ -159,7 +159,7 @@
 #if defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
 // special macros for each pin Arduino Mega board
 #  include "arhat_pins2560.h"
-#elif defined(__AVR_48P__) || defined(__AVR_88P__) || defined(__AVR_168P__) || defined(__AVR_328P__)
+#elif defined(__AVR_ATmega88P__) || defined(__AVR_ATmega88P__) || defined(__AVR_ATmega168P__) || defined(__AVR_ATmega328P__)
 // special macros for UNO at Atmega328p and may be some else board at this CPU
 #  include "arhat_pins328p.h"
 #else
@@ -329,7 +329,7 @@
 #define pwmOff(p)               _pwmOff(p)
 
 // analogWrite(): out PWM p:[2..13,44,45,46,T1C], v:[0..255] with 250kHz. Аналог этой функции 1-й командой.
-#define pwmWrite(p,v)           _pwmWrite(p,v)                  
+#define pwmWrite(p,v)           _pwmWrite(p,v)
 
 // v.1 set 16bit timer (only t:[1,3,4,5]) to PWM special for servo motors:
 //     1/64 FAST-pwm mode with ICP, 50hz (20msec) and set to pwmOut PWM pin,
@@ -369,35 +369,19 @@
 // disable work ADC. Выключение АЦП. Нормально - выключен, ибо "жрет" - много:
 #define adcOff()        { ADCSRA &= ~ADEN; }
 
+/*
+ * Moved into arhat_pinsXXX.h!
+ *
 // input pin for: "GND-pin" analog read
 // p:[0..15]
-#define admux1Channel(src,pin,adlar)  \
-{                                     \
-  ADMUX = (src)|((pin)&7)|(adlar);    \
-  ADCSRB |= ((pin)&8);                \
-  if((pin)&8) { DIDR2 |= ((pin)&7); } \
-  else        { DIDR0 |= ((pin)&7); } \
-}
-
+admux1Channel(src,pin,adlar)
 // input for differential "neg-poz" pin read
 // neg:[1,2|9,10], poz:[0..7|8..15]
-#define admux2Channel(src,neg,poz,adlar)                 \
-{                                                        \
-  ADMUX = ((src)|(16+(((neg-1)&1)<<3)+(poz)&7)|(adlar)); \
-  ADCSRB |= ((poz)&8);                                   \
-  if((poz)&8) { DIDR2 |= ((poz)&7); }                    \
-  else        { DIDR0 |= ((poz)&7); }                    \
-}
-
+admux2Channel(src,neg,poz,adlar)                 \
 // differential and gain "neg-poz" read
 // neg:[0,2|8,10], poz:[0..3|8..11], g:[GAIN_10,GAIN_200], adlar:[ADC_LEFT|ADC_RIGHT]
-#define admux2Gain(src,neg,poz,g,adlar)                              \
-{                                                                    \
-  ADMUX = ((src)|(8+(((neg)&2)<<1)|(((g)&1)<<1)|((poz)&1))|(adlar)); \
-  ADCSRB |= ((poz)&8);                                               \
-  if((poz)&8) { DIDR2 |= ((poz)&7); }                                \
-  else        { DIDR0 |= ((poz)&7); }                                \
-}
+admux2Gain(src,neg,poz,g,adlar)                              \
+*/
 
 //
 // examples for set ADC registers:

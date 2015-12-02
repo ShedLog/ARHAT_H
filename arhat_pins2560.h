@@ -151,6 +151,73 @@
 #define Analog14	START_ANALOG_PIN_NUMBER + 14
 #define Analog15	START_ANALOG_PIN_NUMBER + 15
 
+// input pin for: "GND-pin" analog read
+// p:[0..15]
+#define admux1Channel(src,pin,adlar)  \
+{                                     \
+  ADMUX = (src)|((pin)&7)|(adlar);    \
+  ADCSRB |= ((pin)&8);                \
+  if((pin)&8) { DIDR2 |= ((pin)&7); } \
+  else        { DIDR0 |= ((pin)&7); } \
+}
+
+// input for differential "neg-poz" pin read
+// neg:[1,2|9,10], poz:[0..7|8..15]
+#define admux2Channel(src,neg,poz,adlar)                 \
+{                                                        \
+  ADMUX = ((src)|(16+(((neg-1)&1)<<3)+(poz)&7)|(adlar)); \
+  ADCSRB |= ((poz)&8);                                   \
+  if((poz)&8) { DIDR2 |= ((poz)&7); }                    \
+  else        { DIDR0 |= ((poz)&7); }                    \
+}
+
+// differential and gain "neg-poz" read
+// neg:[0,2|8,10], poz:[0..3|8..11], g:[GAIN_10,GAIN_200], adlar:[ADC_LEFT|ADC_RIGHT]
+#define admux2Gain(src,neg,poz,g,adlar)                              \
+{                                                                    \
+  ADMUX = ((src)|(8+(((neg)&2)<<1)|(((g)&1)<<1)|((poz)&1))|(adlar)); \
+  ADCSRB |= ((poz)&8);                                               \
+  if((poz)&8) { DIDR2 |= ((poz)&7); }                                \
+  else        { DIDR0 |= ((poz)&7); }                                \
+}
+
+#define INT_0           21
+#define INT_1           20
+#define INT_2           19
+#define INT_3           18
+#define INT_4           2
+#define INT_5           3
+
+#define PC_INT_0        53
+#define PC_INT_1        52
+#define PC_INT_2        51
+#define PC_INT_3        50
+#define PC_INT_4        10
+#define PC_INT_5        11
+#define PC_INT_6        12
+#define PC_INT_7        13
+
+#define PC_INT_8        0
+#define PC_INT_9        15
+#define PC_INT_10       14
+/**
+ * You may define it if your board have this pins!
+#define PC_INT_11
+#define PC_INT_12
+#define PC_INT_13
+#define PC_INT_14
+#define PC_INT_15
+*/
+
+#define PC_INT_16       62
+#define PC_INT_17       63
+#define PC_INT_18       64
+#define PC_INT_19       65
+#define PC_INT_20       66
+#define PC_INT_21       67
+#define PC_INT_22       68
+#define PC_INT_23       69
+
 // for PCINT0 redefine data
 #define PCINT0_DDR              DDRB
 #define PCINT0_PORT             PORTB
@@ -207,43 +274,6 @@
 #define JTAG_TCK	58
 
 #define AIN1		5
-
-#define INT_0		21
-#define INT_1		20
-#define INT_2		19
-#define INT_3		18
-#define INT_4		2
-#define INT_5		3
-
-#define PC_INT_0	53
-#define PC_INT_1	52
-#define PC_INT_2	51
-#define PC_INT_3	50
-#define PC_INT_4	10
-#define PC_INT_5	11
-#define PC_INT_6	12
-#define PC_INT_7	13
-
-#define PC_INT_8	0
-#define PC_INT_9	15
-#define PC_INT_10	14
-/**
- * You may define it if your board have this pins!
-#define PC_INT_11
-#define PC_INT_12
-#define PC_INT_13
-#define PC_INT_14
-#define PC_INT_15
-*/
-
-#define PC_INT_16	62
-#define PC_INT_17	63
-#define PC_INT_18	64
-#define PC_INT_19	65
-#define PC_INT_20	66
-#define PC_INT_21	67
-#define PC_INT_22	68
-#define PC_INT_23	69
 
 // ============= special defines for ATmega constants ============ //
 // timer interrupt names and flag bits

@@ -63,6 +63,15 @@
 #define Analog4		4
 #define Analog5		5
 
+// input pin for: "GND-pin" analog read
+// p:[0..15]
+#define admux1Channel(src,pin,adlar)  \
+{                                     \
+  ADMUX = (src)|((pin)&7)|(adlar);    \
+  ADCSRB |= ((pin)&8);                \
+  DIDR0 |= ((pin)&7);                 \
+}
+
 // for PCINT0 redefine data
 #define PCINT0_DDR              DDRB
 #define PCINT0_PORT             PORTB
