@@ -454,7 +454,7 @@ admux2Gain(src,neg,poz,g,adlar)                              \
   __asm__ __volatile__ (      \
     "1: sbiw %0,1 \n\t"       \
        "brne 1b\n\t"          \
-       :: "r" (__count)       \
+       :: "w" (__count)       \
         )
 
 // ============= COMMON LIBRARY: functions from *.c files only ============= //
