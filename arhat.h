@@ -156,7 +156,7 @@
 
 // Mega2560 only. Add other version Arduino before error section
 // Описание ножек Мега2560. Добавлять распиновку плат тут "по образцу"
-#if defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
+#if defined(__AVR_ATmega2560__) || defined(__AVR_ATmega1280__) || defined(__AVR_ATmega640__)
 // special macros for each pin Arduino Mega board
 #  include "arhat_pins2560.h"
 #elif defined(__AVR_ATmega88P__) || defined(__AVR_ATmega88P__) || defined(__AVR_ATmega168P__) || defined(__AVR_ATmega328P__)

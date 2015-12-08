@@ -17,7 +17,7 @@
  *   1. This is a free software for any using and distributing without any warranties.
  *   2. You should keep author tag with any changes. May be with adding.
  */
-#ifdef __AVR_ATmega2560__
+#if defined(__AVR_ATmega2560__) || defined(__AVR_ATmega1280__) || defined(__AVR_ATmega640__)
 
 #include <stdint.h>
 
