@@ -1,21 +1,21 @@
 /**
  * Simple function for calc time and delays.
- * 
+ *
  * use timer0 as default and prescaler 1/64 for each 4 microseconds with 16Mhz CLK.
  * By default timer0 is overflowing each 256 ticks at 1024 microseconds.
- * 
+ *
  * For use other timer you need predefine all constants in block TIME_DEFAULT
  * and recompile this file.
- * 
+ *
  * For simple use, you may rename this file to wiring.c and replace it.
- * 
+ *
  * @author Arhat109: arhat109@mail.ru
- * 
+ *
  * license agreement:
  * You use this software on own your risks. No claims will be accepted.
  * You may use this file any way, but cannot change
  * or delete tag @author above (you may append your tag @author) and must keeping this rows:
- * 
+ *
  * This is free software, not any pay. But you may donate some money to phone +7-951-388-2793
  */
 
@@ -30,11 +30,11 @@ uint32_t getOvfCount()
 {
   uint8_t       _sreg = SREG;
   uint32_t      _count;
-  
+
   cli();
   _count = timer0_overflow_count;
   SREG = _sreg;
-  
+
   return _count;
 }
 
@@ -179,11 +179,7 @@ void time_init()
     timerIMask(TIME_DEFAULT, OVF, 1);
 }
 
-/**
- * Simple function for calc time and delays
- * 
- * @author Arhat109: arhat109@mail.ru
- */
+// ======================== ADC ======================== //
 
 /** Input multiplexer channels (@deprecated: not need more!) */
 #define ADMUX_0		0	/* from Analog0 */
@@ -252,7 +248,7 @@ void time_init()
  * ==========
  * 1. ADC clock [50..200]kHz. for F_CPU = 16Mhz ADC prescaler = 160(opt.): ADPS2:0 = 111 = F_CPU/128
  * 2. set in default mode: 1 channel, ADLAR=right,src=AVCC
- * 
+ *
  * 3. !!! before use it must be adcOn() with delay=108micros !!!
  */
 uint16_t adc_read(uint8_t anPin)
@@ -277,3 +273,26 @@ uint16_t adc_read(uint8_t anPin)
     "out __SREG__,__tmp_reg__\n\t"
   ::);
 }
+
+// ======================== EEPROM ======================== //
+
+/*
+ * copied, not compiled and tested:
+ *
+void EEPROM_write(unsigned int uiAddress, unsigned char ucData)
+{
+  while(EECR & (1<<EEWE));      // Ждать завершения предыдущей записи
+  EEAR = uiAddress;             // Проинициализировать регистры
+  EEDR = ucData;
+  EECR |= (1<<EEMWE);           // Установить флаг EEMWE
+  EECR |= (1<<EEWE);            // Начать запись в EEPROM
+}
+
+unsigned char EEPROM_read(unsigned int uiAddress)
+{
+  while(EECR & (1<<EEWE));      // Ждать завершения предыдущей записи
+  EEAR = uiAddress;             // Проинициализировать регистр адреса
+  EECR |= (1<<EERE);            // Выполнить чтение
+  return EEDR;
+}
+*/

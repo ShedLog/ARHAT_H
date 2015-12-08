@@ -454,7 +454,7 @@ admux2Gain(src,neg,poz,g,adlar)                              \
   __asm__ __volatile__ (      \
     "1: sbiw %0,1 \n\t"       \
        "brne 1b\n\t"          \
-       :: "r" (__count)       \
+       :: "w" (__count)       \
         )
 
 // ============= COMMON LIBRARY: functions from *.c files only ============= //
@@ -493,7 +493,7 @@ void loop(void);
 
 #if defined(ARHAT_MODE) && (ARHAT_MODE == 1)
 // ================================================================================================================== //
-//                         РЕЖИМ совместимости с Wiring, но без подключения самого Wiring:                            //
+//         Compatibity mode with Wiring. РЕЖИМ совместимости с Wiring, но без подключения самого Wiring:              //
 // ------------------------------------------------------------------------------------------------------------------ //
 // Возможность работы с цифровыми пинами, номера которых хранятся в памяти, через вызовы функций Wiring               //
 // ================================================================================================================== //
@@ -503,7 +503,7 @@ void loop(void);
 #elif !defined(ARHAT_MODE) || (ARHAT_MODE == 2)
 
 // ================================================================================================================== //
-//                      РЕЖИМ оптимизации типовых скетчей, написанных с использованием Wiring:                        //
+//      Several mode without Wiring. РЕЖИМ оптимизации типовых скетчей, написанных с использованием Wiring:           //
 // ------------------------------------------------------------------------------------------------------------------ //
 // замена типовых функций на макросы. Номера пинов платы - только через числовые константы. НЕ в памяти!              //
 // ================================================================================================================== //
@@ -528,14 +528,16 @@ void loop(void);
 #define portInputRegister(P)    ( (volatile uint8_t *)(&pinInReg(P)  )
 #define portModeRegister(P)     ( (volatile uint8_t *)(&pinDirReg(P) )
 
+extern void                       (* timer0_hook)(void);        // callback function called from ISR Timer 0 with sei().
+
 #define millis()                     time_millis()
 #define micros()                     time_micros()
 #define delay(ms)                    time_delay16(ms)           // upto 65.5 sec. only!
 #define delayMicroseconds(us)        delayMicro16((us)<<2)      // for 16Mhz CPU only!
 
+// not released yet. From Wiring for compatible:
 #ifdef __cplusplus
 
-// not released yet. From Wiring for compatible:
 #include <stdbool.h>
 typedef bool boolean;           // need in WString.h, WCharacter.h !
 
@@ -550,70 +552,97 @@ typedef bool boolean;           // need in WString.h, WCharacter.h !
 
 #endif // __cplusplus {compatible and not realised yet }
 
-// definition for timer 0 OVF count interrupt included for arhat.c ONLY!
-// Определение обработчика прерывания __vector_23() (timer 0 ovf count) подключается только для компиляции arhat.c
+// ================================================================================================================== //
+// Definition for timer 0 OVF count interrupt included for arhat.c ONLY!                                              //
+// Определение обработчика прерывания __vector_23() (timer 0 ovf count) подключается только для компиляции arhat.c    //
+// ================================================================================================================== //
 #ifdef ARHAT_C
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-volatile uint32_t       timer0_overflow_count   = 0UL;
+volatile uint32_t       timer0_overflow_count   = 0UL;  // Счетчик переполнений таймера 0 "тиков" по 1024мксек.
+volatile void        (* timer0_hook)(void)      = 0;    // функция "хук", вызываемая из обработчика, если надо.
+uint8_t                 timer0_hook_run         = 0;    // hook is running. Blocking twice calling. защелка, запрещающая повторный вызов до возврата из хука.
 
 /**
  * Timer interrupt by Overflow Flag up each (TIMER_TICK_MCS*TIMER_MAX_COUNT) microseconds.
  *
  * Пользуемся побайтовой арифметикой: считали - добавили - сохранили.
- * Экономим регистры и 3 команды (6 байт) от "С" реализации
- * 58 bytes, 40 cycles (2.5mcsec)
+ * Экономим регистры и команды:
+ * "С" verison   = 158 bytes;
+ * "ASM" version = 102 bytes, 46/51/75 cycles: 2.875mcsec for timer0_hook=0 and 4.6875 mcsec for empty call
  *
- * ISR(ISRtimer(TIME_DEFAULT, TIME_ISR), ISR_NAKED) после подстановок формирует это:
+ * ISR(ISRtimer(TIME_DEFAULT, TIME_ISR), ISR_NAKED)
+ *
+ * equal this:
  *
  * void __vector_ 23(void) __attribute__ ((signal, used, externally_visible)) __attribute__((naked));
  * void __vector_ 23(void)
  */
-ISR(ISRtimer(TIME_DEFAULT, TIME_ISR), ISR_NAKED)
+//ISR(ISRtimer(TIME_DEFAULT, TIME_ISR), ISR_NAKED)
+ISR(ISRtimer(TIME_DEFAULT, TIME_ISR))
 {
-//    timer0_overflow_count++;
-// now run events dispatcher:
-//  { uint8_t     i = eventsCount;
-//    Event     * ptr = &Events[0];
-//
-//    while( i ){
-//      if((ptr->start - (uint16_t)timer0_overflow_count) > ptr->timeout)
-//      {
-//        ptr->callback( ptr->data );
-//      }
-//      ptr++;
-//      i--;
-//    }
-//  }
-// reti;
+/* C version:
+ *
+    timer0_overflow_count++;
+    if( timer0_hook && !timer0_hook_run ){
+        timer0_hook_run = 1;
+        sei();
+        timer0_hook();
+        cli();
+        timer0_hook_run = 0;
+    }
+*/
   asm volatile(
-    "    push r24\n\t"
-    "    push r25\n\t"
-    "    in r24,__SREG__\n\t"
-    "    push r24\n\t"
+    "    push r30               \n\t"
+    "    push r31               \n\t"
+    "    in r30,__SREG__        \n\t"
+    "    push r30               \n\t"
 
-    "    lds r24,timer0_overflow_count\n\t"
-    "    lds r25,timer0_overflow_count+1\n\t"
-    "    adiw r24,1\n\t"
-    "    sts timer0_overflow_count,r24\n\t"
-    "    sts timer0_overflow_count+1,r25\n\t"
-    "    clr r25\n\t"
-    "    lds r24,timer0_overflow_count+2\n\t"
-    "    adc r24,r25\n\t"
-    "    sts timer0_overflow_count+2,r24\n\t"
-    "    lds r24,timer0_overflow_count+3\n\t"
-    "    adc r24,r25\n\t"
-    "    sts timer0_overflow_count+3,r24\n\t"
-    "    pop r24\n\t"
-    "    out __SREG__,r24\n\t"
-    "    pop r25\n\t"
-    "    pop r24\n\t"
-    "    reti\n\t"
+    "    lds r30,timer0_overflow_count   \n\t"
+    "    lds r31,timer0_overflow_count+1 \n\t"
+    "    adiw r30,1                      \n\t"
+    "    sts timer0_overflow_count,r30   \n\t"
+    "    sts timer0_overflow_count+1,r31 \n\t"
+    "    clr r31                         \n\t"
+    "    lds r30,timer0_overflow_count+2 \n\t"
+    "    adc r30,r31                     \n\t"
+    "    sts timer0_overflow_count+2,r30 \n\t"
+    "    lds r30,timer0_overflow_count+3 \n\t"
+    "    adc r30,r31                     \n\t"
+    "    sts timer0_overflow_count+3,r30 \n\t"
+
+    "    lds r30,timer0_hook                 ; if( timer0_hook && !timer0_hook_run ){\n\t"
+    "    lds r31,timer0_hook+1                                                       \n\t"
+    "    or  r30,r31                         ; (LByte | HByte) == 0?                 \n\t"
+    "    breq .L1                                                                    \n\t"
+    "    lds r30,timer0_hook_run                                                     \n\t"
+    "    tst r30                             ; r30 & r30 != 0?                       \n\t"
+    "    brne .L1                                                                    \n\t"
+
+    "    inc r30                             ; timer0_hook_run = 1; \n\t"
+    "    sts timer0_hook_run,r30                                    \n\t"
+
+    "    lds r30,timer0_hook                 ; timer0_hook();       \n\t"
+    "    lds r31,timer0_hook+1                                      \n\t"
+    "    sei                                                        \n\t"
+    "    icall                                                      \n\t"
+    "    cli                                                        \n\t"
+
+    "    clr r31                                                    \n\t"
+    "    sts timer0_hook_run,r31             ; timer0_hook_run = 0; \n\t"
+
+    ".L1:                  \n\t"
+    "    pop r30           \n\t"
+    "    out __SREG__,r30  \n\t"
+    "    pop r31           \n\t"
+    "    pop r30           \n\t"
+    "    reti              \n\t"
     ::
   );
+
 }
 
 #endif // ARHAT_C
