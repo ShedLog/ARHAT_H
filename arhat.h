@@ -479,7 +479,10 @@ uint32_t      time_micros(void);                // microseconds upto 1.19 hour
 uint32_t      time_millis(void);                // milliseconds upto 49.7 days
 void          time_delay(unsigned long);        // delay in milliseconds upto 49.7 days
 void          time_delay16(uint16_t);           // delay in milliseconds upto 65.5 sec. only
-uint32_t      getOvfCount(void);		        // cli() .. {sei()} getter.
+uint32_t      getOvfCount(void);                // cli() .. {sei()} getter.
+
+typedef void (*TimerHookProc)(void);
+TimerHookProc setTimerHook(TimerHookProc);      // atomic set timer0_hook and return old value
 
 uint16_t      adc_read(uint8_t);                // ADC read analog pin with waiting to ready. Not by interrupt! for interrupt reading @see tsc.h
 
@@ -581,8 +584,8 @@ uint8_t                 timer0_hook_run         = 0;    // hook is running. Bloc
  * void __vector_ 23(void) __attribute__ ((signal, used, externally_visible)) __attribute__((naked));
  * void __vector_ 23(void)
  */
-//ISR(ISRtimer(TIME_DEFAULT, TIME_ISR), ISR_NAKED)
-ISR(ISRtimer(TIME_DEFAULT, TIME_ISR))
+ISR(ISRtimer(TIME_DEFAULT, TIME_ISR), ISR_NAKED)
+//ISR(ISRtimer(TIME_DEFAULT, TIME_ISR))
 {
 /* C version:
  *

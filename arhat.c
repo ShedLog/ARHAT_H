@@ -39,6 +39,23 @@ uint32_t getOvfCount()
 }
 
 /**
+ * Atomic set timer0_hook
+ * @return TimerHookProc -- previous proc | 0
+ */
+TimerHookProc setTimerHook(TimerHookProc proc)
+{
+  uint8_t       _sreg = SREG;
+  TimerHookProc _res;
+
+  cli();
+  _res = timer0_hook;
+  timer0_hook = proc;
+  SREG = _sreg;
+
+  return _res;
+}
+
+/**
  * Return microseconds 0..up to 1 hours 11.4 minutes are identical with wiring.c
  * "C" code = 76 bytes, "Asm" = 56 bytes and 42 cycles.
  */
