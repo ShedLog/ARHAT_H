@@ -182,12 +182,12 @@
 #define getTimerChannel10       B       // 16-bit, T1 channel B
 #define getTimerChannel11       A       // T2 channel A
 
-#define setPWM3         { TCCR2A |= (SET_MASK_5+3); TCCR3B |= 3; }
-#define setPWM5         { TCCR0A |= (SET_MASK_5+3); TCCR3B |= 3; }
-#define setPWM6         { TCCR0A |= (SET_MASK_7+3); TCCR4B |= 3; }
-#define setPWM9         { TCCR1A |= (SET_MASK_7+1); TCCR2B |= 3; } /* 16-bit: mode 8-bit compatible! */
-#define setPWM10        { TCCR1A |= (SET_MASK_5+1); TCCR2B |= 3; } /* 16-bit: mode 8-bit compatible! */
-#define setPWM11        { TCCR2A |= (SET_MASK_7+3); TCCR1B |= 3; }
+#define setPWM3         { TCCR2A |= (SET_MASK_5+3); TCCR2B |= 3; }
+#define setPWM5         { TCCR0A |= (SET_MASK_5+3); TCCR0B |= 3; }
+#define setPWM6         { TCCR0A |= (SET_MASK_7+3); TCCR0B |= 3; }
+#define setPWM9         { TCCR1A |= (SET_MASK_7+1); TCCR1B |= 3; } /* 16-bit: mode 8-bit compatible! */
+#define setPWM10        { TCCR1A |= (SET_MASK_5+1); TCCR1B |= 3; } /* 16-bit: mode 8-bit compatible! */
+#define setPWM11        { TCCR2A |= (SET_MASK_7+3); TCCR2B |= 3; }
 
 #define offPWM3         { TCCR2A &= (CLR_MASK_5 & CLR_MASK_4); }
 #define offPWM5         { TCCR0A &= (CLR_MASK_5 & CLR_MASK_4); }
