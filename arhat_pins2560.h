@@ -588,10 +588,10 @@
 #define D13_High	PORTB |= SET_MASK_7
 #define D13_Low		PORTB &= CLR_MASK_7
 #define D13_Inv		PORTB ^= SET_MASK_7
-#define D13_Read	*** ERROR! You can't read 13 pin in Arduino Mega!
+#define D13_Read	*** ERROR! You can not read 13 pin in Arduino Mega!
 #define DREG13		DDRB
 #define OREG13		PORTB
-#define IREG13		*** ERROR! You can't read 13 pin in Arduino Mega!
+#define IREG13		*** ERROR! You can not read 13 pin in Arduino Mega!
 #define BSET13		SET_MASK_7
 #define BCLR13		CLR_MASK_7
 
