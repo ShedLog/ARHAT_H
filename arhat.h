@@ -486,6 +486,9 @@ TimerHookProc setTimerHook(TimerHookProc);      // atomic set timer0_hook and re
 
 uint16_t      adc_read(uint8_t);                // ADC read analog pin with waiting to ready. Not by interrupt! for interrupt reading @see tsc.h
 
+unsigned char EEPROM_read(unsigned int uiAddress);               // read 1 byte from EEPROM
+void EEPROM_write(unsigned int uiAddress, unsigned char ucData); // write 1 byte to EEPROM
+
 // ============ standart sketches defines ============= //
 void setup(void);
 void loop(void);

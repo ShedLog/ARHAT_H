@@ -292,9 +292,31 @@ uint16_t adc_read(uint8_t anPin)
 }
 
 // ======================== EEPROM ======================== //
+// Thanks DeGlucker from cyber-place.ru                     //
+// ======================================================== //
+unsigned char EEPROM_read(unsigned int uiAddress)
+{
+  while(EECR & (1<<EEPE));
+  EEARL = uiAddress & 0xFF;
+  EEARH = (uiAddress>>8) & 0xFF;
+  EECR |= (1<<EERE);
+  return EEDR;
+}
 
+void EEPROM_write(unsigned int uiAddress, unsigned char ucData)
+{
+  while(EECR & (1<<EEPE));
+  EEARL = uiAddress & 0xFF;
+  EEARH = (uiAddress>>8) & 0xFF;
+  EEDR = (ucData);
+  uint8_t oreg = SREG;
+  cli();
+  EECR |= (1<<EEMPE);
+  EECR |= (1<<EEPE);
+  SREG = oreg;
+}
 /*
- * copied, not compiled and tested:
+ * copied from cyberlib, not compiled and tested: .. and not worked at AtMega2560, AtMega168p
  *
 void EEPROM_write(unsigned int uiAddress, unsigned char ucData)
 {
