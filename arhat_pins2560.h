@@ -17,7 +17,9 @@
  *   1. This is a free software for any using and distributing without any warranties.
  *   2. You should keep author tag with any changes. May be with adding.
  */
-#if defined(__AVR_ATmega2560__) || defined(__AVR_ATmega1280__) || defined(__AVR_ATmega640__)
+#if !defined(_ARHAT_PINS2560_) && (defined(__AVR_ATmega2560__) || defined(__AVR_ATmega1280__) || defined(__AVR_ATmega640__))
+
+#define _ARHAT_PINS2560_ 1
 
 #include <stdint.h>
 

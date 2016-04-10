@@ -9,11 +9,16 @@
  *    Если надо, то это пишется первой строкой скетча:
  *    #define ARHAT_MODE 1 // режим совместимости с Wiring. Все типовые функции работы с пинами будут из него.
  *    #define ARHAT_MODE 2 // режим имитации команд Wiring. Все типовые функции с пинами заменяются макросами отсюда.
+ *    #define ARHAT_MODE 3 // режим с таймерным хуком для вызова процедур без параметров из под таймера без его остановки.
+ *
  * 2. Команду #include "arhat.h" надо писать второй в скетче.
  * Примечания:
  *  а) Определять ARHAT_MODE - необязательно. Если его нет, по умолчанию будет режим 2
  *  б) В режиме "2" все номера пинов нельзя брать из переменных! Только константные значения. Иначе будет ошибка компиляции скетча.
- *  d) В режиме "2" не определена функция pulseIn()! Вместо неё есть замер длительностей по прерываниям PCINT2 для Mega2560 в tsc.h
+ *  в) В режиме "2" не определена функция pulseIn()! Вместо неё есть замер длительностей по прерываниям PCINT2 для Mega2560 в tsc.h
+ *  г) В режиме "3" обработчик таймера минимален. Хук вызова процедур НЕ включен в компиляцию.
+ *  д) дополнительно к "2" компилируется хук вызова процедур без параметров из под обработчика таймера. Вызов с открытыми прерываниями
+ *     без остановки самого таймера. Повторный вызов хука блокирован "защелкой", что позволяет вызывать из под таймера "долгие" функции.
  *
  * Примеры подключения:
  * 1. Режим 2 по умолчанию: первая строка скетча:
@@ -515,7 +520,7 @@ void loop(void);
 
 #include "Arduino.h"
 
-#elif !defined(ARHAT_MODE) || (ARHAT_MODE == 2)
+#elif !defined(ARHAT_MODE) || (ARHAT_MODE == 2) || (ARHAT_MODE == 3)
 
 // ================================================================================================================== //
 //      Several mode without Wiring. РЕЖИМ оптимизации типовых скетчей, написанных с использованием Wiring:           //
@@ -629,93 +634,106 @@ ISR(ISRtimer(TIME_DEFAULT, TIME_ISR), ISR_NAKED)
     "    adc r30,r31                     \n\t"
     "    sts timer0_overflow_count+3,r30 \n\t"
 
+#if defined(ARHAT_MODE) && (ARHAT_MODE == 3)
     "    lds r30,timer0_hook                 ; if( timer0_hook && !timer0_hook_run ){\n\t"
     "    lds r31,timer0_hook+1                                                       \n\t"
     "    or  r30,r31                         ; (LByte | HByte) == 0?                 \n\t"
     "    brne .L2                                                                    \n\t"
-	"    rjmp .L1             \n\t"
-	".L2:                     \n\t"
+    "    rjmp .L1             \n\t"
+    ".L2:                     \n\t"
     "    lds r30,timer0_hook_run                                                     \n\t"
     "    tst r30                             ; r30 & r30 != 0?                       \n\t"
     "    breq .L3                                                                    \n\t"
-	"    rjmp .L1             \n\t"
-	".L3:                     \n\t"
+    "    rjmp .L1             \n\t"
+    ".L3:                     \n\t"
 
     "    inc r30                             ; timer0_hook_run = 1; \n\t"
     "    sts timer0_hook_run,r30                                    \n\t"
-	"    lds r30,timer0_hook                 ; timer0_hook();       \n\t"
-	"    lds r31,timer0_hook+1                                      \n\t"
+    "    lds r30,timer0_hook                 ; timer0_hook();       \n\t"
+    "    lds r31,timer0_hook+1                                      \n\t"
 
-	"    push r0               \n\t"
-	"    push r1               \n\t"
-	"    push r2               \n\t"
-	"    push r3               \n\t"
-	"    push r4               \n\t"
-	"    push r5               \n\t"
-	"    push r6               \n\t"
-	"    push r7               \n\t"
-	"    push r8               \n\t"
-	"    push r9               \n\t"
-	"    push r10               \n\t"
-	"    push r11               \n\t"
-	"    push r12               \n\t"
-	"    push r13               \n\t"
-	"    push r14               \n\t"
-	"    push r15               \n\t"
-	"    push r16               \n\t"
-	"    push r17               \n\t"
-	"    push r18               \n\t"
-	"    push r19               \n\t"
-	"    push r20               \n\t"
-	"    push r21               \n\t"
-	"    push r22               \n\t"
-	"    push r23               \n\t"
-	"    push r24               \n\t"
-	"    push r25               \n\t"
-	"    push r26               \n\t"
-	"    push r27               \n\t"
-	"    push r28               \n\t"
-	"    push r29               \n\t"
+    ::
+  );
+  pushAllRegs();
+  asm volatile(
+    "    sei   \n\t"
+    "    icall \n\t"
+    "    cli   \n\t"
+    ::
+  );
+  popAllRegs();
+  asm volatile(
+/*
+    "    push r0               \n\t"
+    "    push r1               \n\t"
+    "    push r2               \n\t"
+    "    push r3               \n\t"
+    "    push r4               \n\t"
+    "    push r5               \n\t"
+    "    push r6               \n\t"
+    "    push r7               \n\t"
+    "    push r8               \n\t"
+    "    push r9               \n\t"
+    "    push r10               \n\t"
+    "    push r11               \n\t"
+    "    push r12               \n\t"
+    "    push r13               \n\t"
+    "    push r14               \n\t"
+    "    push r15               \n\t"
+    "    push r16               \n\t"
+    "    push r17               \n\t"
+    "    push r18               \n\t"
+    "    push r19               \n\t"
+    "    push r20               \n\t"
+    "    push r21               \n\t"
+    "    push r22               \n\t"
+    "    push r23               \n\t"
+    "    push r24               \n\t"
+    "    push r25               \n\t"
+    "    push r26               \n\t"
+    "    push r27               \n\t"
+    "    push r28               \n\t"
+    "    push r29               \n\t"
 
     "    sei                                                        \n\t"
     "    icall                                                      \n\t"
     "    cli                                                        \n\t"
 
-	"    pop r29          \n\t"
-	"    pop r28          \n\t"
-	"    pop r27          \n\t"
-	"    pop r26          \n\t"
-	"    pop r25          \n\t"
-	"    pop r24          \n\t"
-	"    pop r23          \n\t"
-	"    pop r22          \n\t"
-	"    pop r21          \n\t"
-	"    pop r20          \n\t"
-	"    pop r19          \n\t"
-	"    pop r18          \n\t"
-	"    pop r17          \n\t"
-	"    pop r16          \n\t"
-	"    pop r15          \n\t"
-	"    pop r14          \n\t"
-	"    pop r13          \n\t"
-	"    pop r12          \n\t"
-	"    pop r11          \n\t"
-	"    pop r10          \n\t"
-	"    pop r9           \n\t"
-	"    pop r8           \n\t"
-	"    pop r7           \n\t"
-	"    pop r6           \n\t"
-	"    pop r5           \n\t"
-	"    pop r4           \n\t"
-	"    pop r3           \n\t"
-	"    pop r2           \n\t"
-	"    pop r1           \n\t"
-	"    pop r0           \n\t"
-
+    "    pop r29          \n\t"
+    "    pop r28          \n\t"
+    "    pop r27          \n\t"
+    "    pop r26          \n\t"
+    "    pop r25          \n\t"
+    "    pop r24          \n\t"
+    "    pop r23          \n\t"
+    "    pop r22          \n\t"
+    "    pop r21          \n\t"
+    "    pop r20          \n\t"
+    "    pop r19          \n\t"
+    "    pop r18          \n\t"
+    "    pop r17          \n\t"
+    "    pop r16          \n\t"
+    "    pop r15          \n\t"
+    "    pop r14          \n\t"
+    "    pop r13          \n\t"
+    "    pop r12          \n\t"
+    "    pop r11          \n\t"
+    "    pop r10          \n\t"
+    "    pop r9           \n\t"
+    "    pop r8           \n\t"
+    "    pop r7           \n\t"
+    "    pop r6           \n\t"
+    "    pop r5           \n\t"
+    "    pop r4           \n\t"
+    "    pop r3           \n\t"
+    "    pop r2           \n\t"
+    "    pop r1           \n\t"
+    "    pop r0           \n\t"
+*/
     "    clr r31                                                    \n\t"
     "    sts timer0_hook_run,r31             ; timer0_hook_run = 0; \n\t"
-
     ".L1:                  \n\t"
+#endif // ARHAT_MODE == 3
     "    pop r30           \n\t"
     "    out __SREG__,r30  \n\t"
     "    pop r31           \n\t"

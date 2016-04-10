@@ -57,13 +57,26 @@ extern "C" {
 #endif
 // ====================== Настройка и чтение состояния датчиков ЦВЕТА TCS3200 ========================= //
 
-#define tcsOut    47                    // T5in   => выход обоих датчиков out
-#define tcsICP    48                    // на будущее: подсчет периода приходящей частоты
-#define tcsS2     44                    // T5outC => управление цветом обоих датчиков
-#define tcsS3     46                    // T5outA => управление цветом обоих датчиков
-#define tcsOE1    49                    // T4ICP  => !OE for TCS3200 1-й датчик
-#define tcsOE2    45                    // T5outB => !OE for TCS3200 2-й датчик
-#define tcsTimer   5
+#if defined(_ARHAT_PINS2560_)
+    #define tcsOut    47                    // T5in   => выход обоих датчиков out
+    #define tcsICP    48                    // T5icp на будущее: подсчет периода приходящей частоты
+    #define tcsS2     44                    // T5outC => управление цветом обоих датчиков
+    #define tcsS3     46                    // T5outA => управление цветом обоих датчиков
+    #define tcsOE1    49                    // T4ICP  => !OE for TCS3200 1-й датчик
+    #define tcsOE2    45                    // T5outB => !OE for TCS3200 2-й датчик
+    #define tcsTimer   5
+#elif defined(_ARHAT_PINS328P_)
+    #define tcsOut     5                    // T1in   => выход обоих датчиков out
+    #define tcsICP     8                    // T1icp на будущее: подсчет периода приходящей частоты
+    #define tcsS2      3                    //
+    #define tcsS3      4                    //
+    #define tcsOE1     6                    //
+    #define tcsOE2     7                    //
+    #define tcsTimer   1
+#else
+    #error *** ERROR! Not MEGA2560 and NOT UNO or such .. new board? ***
+#endif
+
 #define TCS_MAX_SENSORS    2            // Всего датчиков на этом счетчике
 #define TCS_MAX_MEASURES   1            // [1,2,4,8,..] для автозамены деления сдвигами
 #define TCS_WAIT           2            // мсек на разовый подсчет частоты. Итого fmin=250hz (4лк), замер 4 цветов = 62.5Гц

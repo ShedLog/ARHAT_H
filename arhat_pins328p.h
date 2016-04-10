@@ -17,7 +17,7 @@
  *   1. This is a free software for any using and distributing without any warranties.
  *   2. You should keep author tag with any changes. May be with adding.
  */
-#if defined(__AVR_ATmega88P__) || defined(__AVR_ATmega88P__) || defined(__AVR_ATmega168P__) || defined(__AVR_ATmega328P__)
+#if !defined(_ARHAT_PINS328P_) && (defined(__AVR_ATmega88P__) || defined(__AVR_ATmega88P__) || defined(__AVR_ATmega168P__) || defined(__AVR_ATmega328P__))
 
 #define ARDUINO_MEGA_PINS           17
 #define NUM_DIGITAL_PINS            ARDUINO_MEGA_PINS

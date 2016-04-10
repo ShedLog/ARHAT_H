@@ -20,6 +20,7 @@
  */
 
 #define ARHAT_C 1           // need for includes interrupt function in this file only.
+#define ARHAT_MODE 3        // need in this file!
 #include "arhat.h"
 
 /**
@@ -315,23 +316,110 @@ void EEPROM_write(unsigned int uiAddress, unsigned char ucData)
   EECR |= (1<<EEPE);
   SREG = oreg;
 }
-/*
- * copied from cyberlib, not compiled and tested: .. and not worked at AtMega2560, AtMega168p
- *
-void EEPROM_write(unsigned int uiAddress, unsigned char ucData)
+
+// ======================== RTOS simple ======================== //
+// Small functions for future RTOS: save/load context            //
+// ============================================================= //
+
+/**
+ * Save all register file and SREG on stack and right return to caller
+ * Сохранение полного контекста на стеке и корректный возврат в точку вызова
+ */
+void pushAllRegs()
 {
-  while(EECR & (1<<EEWE));      // Ждать завершения предыдущей записи
-  EEAR = uiAddress;             // Проинициализировать регистры
-  EEDR = ucData;
-  EECR |= (1<<EEMWE);           // Установить флаг EEMWE
-  EECR |= (1<<EEWE);            // Начать запись в EEPROM
+  asm volatile(
+    "    push r31               \n\t"
+    "    push r30               \n\t"
+    "    in   r31,__SP_H__      \n\t"
+    "    in   r30,__SP_L__      \n\t"
+    "    push r0                \n\t"
+    "    in   r0,__SREG__       \n\t"
+    "    push r0                \n\t"
+    "    push r1                \n\t"
+    "    push r2                \n\t"
+    "    push r3                \n\t"
+    "    push r4                \n\t"
+    "    push r5                \n\t"
+    "    push r6                \n\t"
+    "    push r7                \n\t"
+    "    push r8                \n\t"
+    "    push r9                \n\t"
+    "    push r10               \n\t"
+    "    push r11               \n\t"
+    "    push r12               \n\t"
+    "    push r13               \n\t"
+    "    push r14               \n\t"
+    "    push r15               \n\t"
+    "    push r16               \n\t"
+    "    push r17               \n\t"
+    "    push r18               \n\t"
+    "    push r19               \n\t"
+    "    push r20               \n\t"
+    "    push r21               \n\t"
+    "    push r22               \n\t"
+    "    push r23               \n\t"
+    "    push r24               \n\t"
+    "    push r25               \n\t"
+    "    push r26               \n\t"
+    "    push r27               \n\t"
+    "    push r28               \n\t"
+    "    push r29               \n\t"
+    "    ldd  r0,Z+2            \n\t"
+    "    ldd  r1,Z+3            \n\t"
+    "    push r1                \n\t"
+    "    push r0                \n\t"
+    ::
+    );
 }
 
-unsigned char EEPROM_read(unsigned int uiAddress)
+/**
+ * Load all register file and SREG from stack and right return to caller
+ * Обратная задача: восстановление контекста регистров и битов состояния из стека
+ * с подменой старой точки возрата (@see pushAllRegs()) на корректный возврат отсюда
+ */
+void popAllRegs()
 {
-  while(EECR & (1<<EEWE));      // Ждать завершения предыдущей записи
-  EEAR = uiAddress;             // Проинициализировать регистр адреса
-  EECR |= (1<<EERE);            // Выполнить чтение
-  return EEDR;
+asm volatile(
+    "    pop r1           \n\t"
+    "    pop r0           \n\t"
+    "    pop r29          \n\t"
+    "    pop r28          \n\t"
+    "    pop r27          \n\t"
+    "    pop r26          \n\t"
+    "    pop r25          \n\t"
+    "    pop r24          \n\t"
+    "    pop r23          \n\t"
+    "    pop r22          \n\t"
+    "    pop r21          \n\t"
+    "    pop r20          \n\t"
+    "    pop r19          \n\t"
+    "    pop r18          \n\t"
+    "    pop r17          \n\t"
+    "    pop r16          \n\t"
+    "    pop r15          \n\t"
+    "    pop r14          \n\t"
+    "    pop r13          \n\t"
+    "    pop r12          \n\t"
+    "    pop r11          \n\t"
+    "    pop r10          \n\t"
+    "    pop r9           \n\t"
+    "    pop r8           \n\t"
+    "    pop r7           \n\t"
+    "    pop r6           \n\t"
+    "    pop r5           \n\t"
+    "    pop r4           \n\t"
+    "    pop r3           \n\t"
+    "    pop r2           \n\t"
+    "    in  r31,__SP_H__ \n\t"
+    "    in  r30,__SP_L__ \n\t"
+    "    std Z+5,r0       \n\t"
+    "    std Z+6,r1       \n\t"
+    "    pop r1           \n\t"
+    "    pop r0           \n\t"
+    "    out __SREG__,r0  \n\t"
+    "    pop r0           \n\t"
+    "    pop r30          \n\t"
+    "    pop r31          \n\t"
+    ::
+    );
 }
-*/

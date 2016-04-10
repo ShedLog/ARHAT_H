@@ -18,6 +18,9 @@
  * @author Arhat109, arhat109@mail.ru
  * Thanks for Dimax getted from http://arduino.ru/forum/programmirovanie/attiny13a-101-primenenie?page=14#comment-151629, post #726
  */
+#ifdef __cplusplus
+  extern "C" {
+#endif
 
 typedef struct {
     uint16_t Humidity;
@@ -34,3 +37,7 @@ void dht22_setup();     // for setup(). Установка и настройка
  * в виде целых чисел *10 (с десятыми: 23.5градуса = 235!)
  */
 void dht22_read();
+
+#ifdef __cplusplus
+  }
+#endif

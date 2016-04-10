@@ -12,11 +12,13 @@
 #include "arhat.h"
 #include "dht22.h"
 
-typedef struct {
-    uint16_t Humidity;
-    uint16_t Temperature;
-    uint8_t  error;
-} DHT22struct;
+#if !defined(timerDHT)
+  #define timerDHT 0
+#endif
+
+#if !defined(pinDHT)
+#define pinDHT 4
+#endif
 
 DHT22struct     dht22data;
 
@@ -41,18 +43,19 @@ void dht22_setup()
 void dht22_read()
 {
     uint16_t data;
+    uint8_t  i;
 
     digitalWrite(pinDHT, LOW); pinMode(pinDHT, OUTPUT);
     delayMicro16(800*4);
     pinMode(pinDHT, INPUT); digitalWrite(pinDHT, HIGH);
 
-    for ( int8_t i = -3 ; i < 2 * 40; i++ ) {
+    for ( i = -3 ; i < 2 * 40; i++ ) {
         uint8_t age;
 
         timerCount(timerDHT) = 0;
         do {
             uint8_t age=timerCount(timerDHT);
-            if ( age > 108 ){ error = 1; return; }
+            if ( age > 108 ){ dht22data.error = 1; return; }
         }while( digitalRead(pinDHT) == (i & 1)? 1 : 0  ) ;
 
         if ( i >= 0 && (i & 1) ){
