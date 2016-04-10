@@ -56,12 +56,12 @@
 #define pin22	22	// PC 5 ** chip28 + Analog5 + PCINT13 **
 
 // local analog pin numbers
-#define Analog0		0
-#define Analog1		1
-#define Analog2		2
-#define Analog3		3
-#define Analog4		4
-#define Analog5		5
+#define Analog0		START_ANALOG_PIN_NUMBER+0
+#define Analog1		START_ANALOG_PIN_NUMBER+1
+#define Analog2		START_ANALOG_PIN_NUMBER+2
+#define Analog3		START_ANALOG_PIN_NUMBER+3
+#define Analog4		START_ANALOG_PIN_NUMBER+4
+#define Analog5		START_ANALOG_PIN_NUMBER+5
 
 // input pin for: "GND-pin" analog read
 // p:[0..15]
@@ -109,6 +109,9 @@
 #define SPI_MOSI	11
 #define SPI_SCK		13
 #define SPI_SS		10
+
+#define I2C_SCL     21
+#define I2C_SDA     22
 
 #define AIN0		6
 #define AIN1		7

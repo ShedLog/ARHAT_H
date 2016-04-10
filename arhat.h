@@ -457,6 +457,15 @@ admux2Gain(src,neg,poz,g,adlar)                              \
        :: "w" (__count)       \
         )
 
+// ============= Macro for #includes Макросы для подключаемых файлов  ============== //
+// ================================================================================= //
+// Compiler mode ONLY! Use as digits into #define TWI_ON before include this file ONLY!
+#define TWI_MASTER_TX    1
+#define TWI_MASTER_RX    2
+#define TWI_IS_SLAVE_RX  4
+#define TWI_IS_SLAVE_TX  8
+//#define TWI_LOG_ON      16
+
 // ============= COMMON LIBRARY: functions from *.c files only ============= //
 #ifdef __cplusplus
 extern "C" {
