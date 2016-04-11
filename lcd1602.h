@@ -28,7 +28,7 @@
 #ifndef _LCD1602_H_
 
 #ifndef _ARHAT_TWI_H_
-  #define TWI_ON 1
+  #define TWI_ON 1         // only Master-Transmit mode! Not use other mode in this!
   #include "arhat_twi.h"
 #endif // _ARHAT_TWI_H_
 
@@ -109,12 +109,12 @@
  * Установить абсолютную позицию курсора
  */
 #define lcdSetCursor(_col,_row) \
-    (lcdCommand(LCD_SHOW_RAM | (((_row)? 0x40 : 0x00) + (uint8_t)(_col) & 0x7f)))
+    (lcdCommand(LCD_SHOW_RAM | ((((_row)? 0x40 : 0x00) + (uint8_t)(_col)) & 0x7f)))
 
 /**
  * Установить позицию записи в память шрифтов
  */
-#define lcdGoChar5x8(_ch) (lcdCommand(LCD_FONT_RAM | ((uint8_t)(_ch))<<3)&0x3f)
+#define lcdGoChar5x8(_ch) (lcdCommand(LCD_FONT_RAM | ((((uint8_t)(_ch))<<3)&0x3f)))
 
 #ifdef __cplusplus
   extern "C" {
