@@ -24,8 +24,6 @@
 // ************* Example *********** //
 
 void setup() {
-    uint16_t time;
-
     lcdSetup(0x27, 16, 2, 1);
     lcdWrite("Hello, Arhat!", 13);
     lcdSetCursor(0,1);
