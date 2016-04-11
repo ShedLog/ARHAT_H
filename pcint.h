@@ -61,21 +61,21 @@
 #if PCINT==0
 
 #if !defined(MAX_PULSES0)
-#error "*** pcint.h::ERROR! not defined how much pins will be used for pcint level 0"
+#error *** pcint.h::ERROR! not defined how much pins will be used for pcint level 0
 #endif
 #define PCINT_0 1
 
 #elif PCINT==1
 
 #if !defined(MAX_PULSES1)
-#error "*** pcint.h::ERROR! not defined how much pins will be used for pcint level 1"
+#error *** pcint.h::ERROR! not defined how much pins will be used for pcint level 1
 #endif
 #define PCINT_1 1
 
 #elif PCINT==2
 
 #if !defined(MAX_PULSES2)
-#error "*** pcint.h::ERROR! not defined how much pins will be used for pcint level 2"
+#error *** pcint.h::ERROR! not defined how much pins will be used for pcint level 2
 #endif
 #define PCINT_2 1
 

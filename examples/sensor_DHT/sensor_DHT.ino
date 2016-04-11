@@ -48,7 +48,7 @@ void dht_read()
 
         timerCount(0) = 0;
         do {
-            uint8_t age=timeCount(0);
+            uint8_t age=timerCount(0);
             if ( age > 108 ){ error = 1; return; }
         }while( digitalRead(pinDHT) == (i & 1)? 1 : 0  ) ;
 

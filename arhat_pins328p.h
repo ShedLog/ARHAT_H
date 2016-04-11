@@ -17,7 +17,7 @@
  *   1. This is a free software for any using and distributing without any warranties.
  *   2. You should keep author tag with any changes. May be with adding.
  */
-#ifdef __AVR_ATmega328P__
+#if !defined(_ARHAT_PINS328P_) && (defined(__AVR_ATmega88P__) || defined(__AVR_ATmega88P__) || defined(__AVR_ATmega168P__) || defined(__AVR_ATmega328P__))
 
 #define ARDUINO_MEGA_PINS           17
 #define NUM_DIGITAL_PINS            ARDUINO_MEGA_PINS
@@ -56,12 +56,12 @@
 #define pin22	22	// PC 5 ** chip28 + Analog5 + PCINT13 **
 
 // local analog pin numbers
-#define Analog0		0
-#define Analog1		1
-#define Analog2		2
-#define Analog3		3
-#define Analog4		4
-#define Analog5		5
+#define Analog0		START_ANALOG_PIN_NUMBER+0
+#define Analog1		START_ANALOG_PIN_NUMBER+1
+#define Analog2		START_ANALOG_PIN_NUMBER+2
+#define Analog3		START_ANALOG_PIN_NUMBER+3
+#define Analog4		START_ANALOG_PIN_NUMBER+4
+#define Analog5		START_ANALOG_PIN_NUMBER+5
 
 // input pin for: "GND-pin" analog read
 // p:[0..15]
@@ -109,6 +109,9 @@
 #define SPI_MOSI	11
 #define SPI_SCK		13
 #define SPI_SS		10
+
+#define I2C_SCL     21
+#define I2C_SDA     22
 
 #define AIN0		6
 #define AIN1		7
@@ -182,12 +185,12 @@
 #define getTimerChannel10       B       // 16-bit, T1 channel B
 #define getTimerChannel11       A       // T2 channel A
 
-#define setPWM3         { TCCR2A |= (SET_MASK_5+3); TCCR3B |= 3; }
-#define setPWM5         { TCCR0A |= (SET_MASK_5+3); TCCR3B |= 3; }
-#define setPWM6         { TCCR0A |= (SET_MASK_7+3); TCCR4B |= 3; }
-#define setPWM9         { TCCR1A |= (SET_MASK_7+1); TCCR2B |= 3; } /* 16-bit: mode 8-bit compatible! */
-#define setPWM10        { TCCR1A |= (SET_MASK_5+1); TCCR2B |= 3; } /* 16-bit: mode 8-bit compatible! */
-#define setPWM11        { TCCR2A |= (SET_MASK_7+3); TCCR1B |= 3; }
+#define setPWM3         { TCCR2A |= (SET_MASK_5+3); TCCR2B |= 3; }
+#define setPWM5         { TCCR0A |= (SET_MASK_5+3); TCCR0B |= 3; }
+#define setPWM6         { TCCR0A |= (SET_MASK_7+3); TCCR0B |= 3; }
+#define setPWM9         { TCCR1A |= (SET_MASK_7+1); TCCR1B |= 3; } /* 16-bit: mode 8-bit compatible! */
+#define setPWM10        { TCCR1A |= (SET_MASK_5+1); TCCR1B |= 3; } /* 16-bit: mode 8-bit compatible! */
+#define setPWM11        { TCCR2A |= (SET_MASK_7+3); TCCR2B |= 3; }
 
 #define offPWM3         { TCCR2A &= (CLR_MASK_5 & CLR_MASK_4); }
 #define offPWM5         { TCCR0A &= (CLR_MASK_5 & CLR_MASK_4); }

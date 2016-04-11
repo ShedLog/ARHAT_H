@@ -49,6 +49,7 @@ extern "C" {
 #include "pcint.h"
 
 #define _START_TRIG(p)  startTrig##p (void *_tsc)
+//#define _START_TRIG(p)  startTrig##p (void)
 #define START_TRIG(p)  _START_TRIG(p)
 
 #define HCSR04_START           4        // номер статуса КА для запуска замеров (вручную)

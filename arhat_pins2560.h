@@ -17,7 +17,9 @@
  *   1. This is a free software for any using and distributing without any warranties.
  *   2. You should keep author tag with any changes. May be with adding.
  */
-#ifdef __AVR_ATmega2560__
+#if !defined(_ARHAT_PINS2560_) && (defined(__AVR_ATmega2560__) || defined(__AVR_ATmega1280__) || defined(__AVR_ATmega640__))
+
+#define _ARHAT_PINS2560_ 1
 
 #include <stdint.h>
 
@@ -588,10 +590,10 @@
 #define D13_High	PORTB |= SET_MASK_7
 #define D13_Low		PORTB &= CLR_MASK_7
 #define D13_Inv		PORTB ^= SET_MASK_7
-#define D13_Read	*** ERROR! You can't read 13 pin in Arduino Mega!
+#define D13_Read	*** ERROR! You can not read 13 pin in Arduino Mega!
 #define DREG13		DDRB
 #define OREG13		PORTB
-#define IREG13		*** ERROR! You can't read 13 pin in Arduino Mega!
+#define IREG13		*** ERROR! You can not read 13 pin in Arduino Mega!
 #define BSET13		SET_MASK_7
 #define BCLR13		CLR_MASK_7
 
