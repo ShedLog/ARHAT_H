@@ -211,6 +211,7 @@ void twiSetup(uint32_t freq, uint8_t mode)
 
 /**
  * for ISR(TWI): control restart conditions in all modes:
+ * ! if only 1 mode -- this is a MACRO with next RETURN into ISR, else - function !
  *
  * 1. Освобождать шину, или надо ещё (напр. прием после передачи)?
  * да: Сеанс завершен. Ждем прямо тут прохождения стопа! Выходим из обработчика тут!
@@ -220,6 +221,7 @@ void twiSetup(uint32_t freq, uint8_t mode)
  * в любом случае отправляем restart
  *
  */
+#if !((TWI_ON & 0xFF)==1) && !((TWI_ON & 0xFF)==2) && !((TWI_ON & 0xFF)==4) && !((TWI_ON & 0xFF)==8)
 void twiSendStop(uint8_t _md)
 {
     if (_md & TWI_SEND_STOP)
@@ -236,6 +238,14 @@ void twiSendStop(uint8_t _md)
         TWCR = twiStart(_md & TWI_IS_SLAVE);
     }
 }
+#else
+#define twiSendStop(_md)                                   \
+{                                                          \
+    TWCR = _BV(TWSTO)|twiReleaseBus((_md) & TWI_IS_SLAVE); \
+    while(TWCR & _BV(TWSTO));                              \
+    twiMode |= TWI_READY;                                  \
+}
+#endif
 
 /**
  * ISR for TWI interface: realised master and slave modes
