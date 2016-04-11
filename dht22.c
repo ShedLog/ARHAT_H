@@ -42,7 +42,7 @@ void dht22_setup()
  */
 void dht22_read()
 {
-    uint16_t data;
+    uint16_t data = 0;
     uint8_t  i;
 
     digitalWrite(pinDHT, LOW); pinMode(pinDHT, OUTPUT);
