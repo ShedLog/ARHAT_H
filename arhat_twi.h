@@ -140,7 +140,7 @@
 #endif
 // ------------ TWI internal variables ------------- //
 
-enum TWI_Modes {
+enum TwiModes {
      TWI_IS_SLAVE  = 1                                  // have I slave mode too?
     ,TWI_SEND_STOP = 2                                  // is need send stop when Master is ending?
     ,TWI_READY     = 4                                  // previous work is ended
@@ -164,15 +164,15 @@ volatile void    (* twiMasterReader)(void) = 0;         // указатель н
 volatile void    (* twiSlaveReader)(void) = 0;          // указатель на функцию "Slave принял данные, куда их?"
 volatile void    (* twiSlaveWriter)(void) = 0;          // указатель на функцию "Slave всё отправил, что дальше?"
 
-#ifdef TWI_LOG_ON
+#if defined(TWI_ON) && (TWI_ON & TWI_LOG_ON)
 
 typedef struct {
     uint16_t   starts,restarts,stops,losts,noslarw,mtx,mrx,srx,grx,stx;
-} TWI_Stat;
-#define ptrTWI_Stat(ptr)  ((TWI_Stat *)(ptr))
-static volatile TWI_Stat    twiStatistic;
+} TwiStat;
+#define ptrTwiStat(ptr)  ((TWI_Stat *)(ptr))
+static volatile TwiStat    twiStatistic;
 
-#endif // TWI_LOG_ON
+#endif // TWI_ON::TWI_LOG_ON
 
 // ------------ TWI functions ------------- //
 

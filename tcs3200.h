@@ -146,7 +146,7 @@ enum TCS_Modes {
 
 extern volatile int      tcsColors[TCS_MAX_SENSORS][4]; // итоговые и усредненные данные замера
 extern volatile int      tcsTemp[4];                    // внутреннее хранение данных при усреднениях и замерах
-extern volatile int      minVal,maxVal;                 // мин и макс. уровни каналов цвета
+extern volatile int      tcsMinVal,tcsMaxVal;                 // мин и макс. уровни каналов цвета
 extern volatile uint16_t tcsCount;                      // номер завершенного замера
 extern volatile uint8_t  tcsColor;                      // текущий измеряемый цвет в попытке или состояние КА
 extern volatile uint8_t  tcsMeasure;                    // номер текущей усредняемой попытки замера

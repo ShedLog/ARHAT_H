@@ -54,7 +54,7 @@
 
 volatile int      tcsColors[TCS_MAX_SENSORS][4]; // итоговые и усредненные данные замера
 volatile int      tcsTemp[4];                    // внутреннее хранение данных при усреднениях и замерах
-volatile int      minVal,maxVal;                 // мин и макс. уровни каналов цвета
+volatile int      tcsMinVal,tcsMaxVal;                 // мин и макс. уровни каналов цвета
 volatile uint16_t tcsCount;                      // номер завершенного замера
 volatile uint8_t  tcsColor;                      // текущий измеряемый цвет в попытке или состояние КА
 volatile uint8_t  tcsMeasure;                    // номер текущей усредняемой попытки замера
@@ -162,18 +162,18 @@ void tcsCorrect()
 
 /**
  * Усреднение попыток замера, перевод в люксы и подсчет мин/мах уровней каналов цвета
- * @global int minVal,maxVal,tcsTemp[]
+ * @global int tcsMinVal, tcsMaxVal,tcsTemp[]
  */
 void tcsMinMax()
 {
     int      val;
     uint8_t    i;
 
-    minVal = 32767; maxVal = 0;
+    tcsMinVal = 32767; tcsMaxVal = 0;
     for(i=3; i>0; i--){
       val = tcsTemp[i];
-      if( minVal > val ) minVal = val;
-      if( maxVal < val ) maxVal = val;
+      if( tcsMinVal > val ) tcsMinVal = val;
+      if( tcsMaxVal < val ) tcsMaxVal = val;
     }
 }
 
@@ -195,7 +195,7 @@ void tcsWhiteLocal(){
 
 /**
  * повышение контраста
- * @global minVal,maxVal,tcsTemp[]
+ * @global tcsMinVal,tcsMaxVal,tcsTemp[]
  */
 void tcsContrast()
 {
@@ -203,13 +203,13 @@ void tcsContrast()
     uint8_t val = TCS_CONTRAST*2;
 
     tcsMinMax();
-    delta = maxVal - minVal;
-         if( delta < minVal   ) val = TCS_CONTRAST;
-    else if( delta > 2*minVal ) val = TCS_CONTRAST*4;
+    delta = tcsMaxVal - tcsMinVal;
+         if( delta < tcsMinVal   ) val = TCS_CONTRAST;
+    else if( delta > 2*tcsMinVal ) val = TCS_CONTRAST*4;
 
-    tcsTemp[1] += (tcsTemp[1] - minVal)/val;
-    tcsTemp[2] += (tcsTemp[2] - minVal)/val;
-    tcsTemp[3] += (tcsTemp[3] - minVal)/val;
+    tcsTemp[1] += (tcsTemp[1] - tcsMinVal)/val;
+    tcsTemp[2] += (tcsTemp[2] - tcsMinVal)/val;
+    tcsTemp[3] += (tcsTemp[3] - tcsMinVal)/val;
 }
 
 /**
