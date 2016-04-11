@@ -20,7 +20,7 @@
  */
 
 #define ARHAT_C 1           // need for includes interrupt function in this file only.
-#define ARHAT_MODE 3        // need in this file!
+#define ARHAT_MODE 2        // need in this file!
 #include "arhat.h"
 
 /**
