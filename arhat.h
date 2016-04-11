@@ -248,14 +248,14 @@
 // defaults timer0 timers functions and interrupts such in wiring
 // Константы настройки таймера 0 совместимые с wiring: таймер работает по 4мксек.
 #ifndef TIME_DEFAULT                    /* all defaults for F_CPU=16Mhz ONLY! */
-#  define TIME_DEFAULT             0
-#  define TIME_MAX_COUNTER       256    /* max conter+1                                               */
-#  define TIME_PRESCALLER         64
-#  define TIME_MODE                3    /* WGM10 = 1, WGM00 = 1 fast-PWM mode for timer0              */
-#  define TIME_TICK_MCS            4    /* 1 tick by prescaler:[0.25, 0.5, 4, 16, 64] in microseconds */
-#  define TIME_SHIFT               2    /* From prescaller: 1=>4, 8=>1, 64=>2, 256=>4, 1024=>6        */
-#  define TIME_MCS2MS      1024/1000    /* ==[16,128,1024,4096,16384]/1000 by prescaler               */
-#  define TIME_ISR               OVF    /* what interrupt name using for this timer                   */
+  #define TIME_DEFAULT             0
+  #define TIME_MAX_COUNTER       256    /* max conter+1                                               */
+  #define TIME_PRESCALLER         64
+  #define TIME_MODE                3    /* WGM10 = 1, WGM00 = 1 fast-PWM mode for timer0              */
+  #define TIME_TICK_MCS            4    /* 1 tick by prescaler:[0.25, 0.5, 4, 16, 64] in microseconds */
+  #define TIME_SHIFT               2    /* From prescaller: 1=>4, 8=>1, 64=>2, 256=>4, 1024=>6        */
+  #define TIME_MCS2MS      1024/1000    /* ==[16,128,1024,4096,16384]/1000 by prescaler               */
+  #define TIME_ISR               OVF    /* what interrupt name using for this timer                   */
 #endif
 
 /* =========== Pin works. Работа с цифровыми входами и выходами 1 командой ============= */
