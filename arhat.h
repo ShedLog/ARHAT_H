@@ -487,6 +487,8 @@ extern "C" {
 extern volatile uint32_t timer0_overflow_count;
 
 // @see arhat.c
+void          pushAllRegs(void);                // save on stack all context with correct move return point
+void          popAllRegs(void);                 // load context from stack, was saved by pushAllRegs()
 
 void          time_init(void);                  // init timer with TIME_DEFAULT section in arhat_time.c
 uint32_t      time_micros(void);                // microseconds upto 1.19 hour
@@ -583,7 +585,7 @@ extern "C" {
 #endif
 
 volatile uint32_t       timer0_overflow_count   = 0UL;  // timer overflow counter. Счетчик переполнений таймера 0 "тиков" по 1024мксек.
-volatile void        (* timer0_hook)(void)      = 0;    // hook function pointer. функция "хук", вызываемая из обработчика, если надо.
+void                 (* timer0_hook)(void)      = 0;    // hook function pointer. функция "хук", вызываемая из обработчика, если надо.
 uint8_t                 timer0_hook_run         = 0;    // hook is running. Blocking twice calling. защелка, запрещающая повторный вызов до возврата из хука.
 
 /**
