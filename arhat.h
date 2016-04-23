@@ -182,11 +182,11 @@
 
 #define _pin(p)         (pin##p)
 
-#define pinDirReg(p)    (DREG##p)       // get DDRx  direction register macros for pin
-#define pinOutReg(p)    (OREG##p)       // get PORTx output register macros for pin
-#define pinInReg(p)     (IREG##p)       // get PINx  input register macros for pin
-#define pinSetMask(p)   (BSET##p)       // get bit mask to set pin into HIGH
-#define pinClearMask(p) (BCLR##p)       // get bit mask to LOW pin
+#define pinDirReg(p)    (DREG##p)
+#define pinOutReg(p)    (OREG##p)
+#define pinInReg(p)     (IREG##p)
+#define pinSetMask(p)   (BSET##p)
+#define pinClearMask(p) (BCLR##p)
 
 #define _pwmGetTimer(p)         getTimer##p
 #define _pwmGetChannel(p)       getTimerChannel##p

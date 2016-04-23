@@ -19,6 +19,8 @@
  */
 #if !defined(_ARHAT_PINS328P_) && (defined(__AVR_ATmega88P__) || defined(__AVR_ATmega88P__) || defined(__AVR_ATmega168P__) || defined(__AVR_ATmega328P__))
 
+#define _ARHAT_PINS328P_   1
+
 #define ARDUINO_MEGA_PINS           17
 #define NUM_DIGITAL_PINS            ARDUINO_MEGA_PINS
 #define MAX_ANALOG_INPUTS           6
@@ -56,12 +58,12 @@
 #define pin22	22	// PC 5 ** chip28 + Analog5 + PCINT13 **
 
 // local analog pin numbers
-#define Analog0		START_ANALOG_PIN_NUMBER+0
-#define Analog1		START_ANALOG_PIN_NUMBER+1
-#define Analog2		START_ANALOG_PIN_NUMBER+2
-#define Analog3		START_ANALOG_PIN_NUMBER+3
-#define Analog4		START_ANALOG_PIN_NUMBER+4
-#define Analog5		START_ANALOG_PIN_NUMBER+5
+#define Analog0		17
+#define Analog1		18
+#define Analog2		19
+#define Analog3		20
+#define Analog4		21
+#define Analog5		22
 
 // input pin for: "GND-pin" analog read
 // p:[0..15]
@@ -127,13 +129,13 @@
 #define PC_INT_5	13
 #define PC_INT_6	14
 #define PC_INT_7	15
-#define PC_INT_8	START_ANALOG_PIN_NUMBER+0
-#define PC_INT_9	START_ANALOG_PIN_NUMBER+1
-#define PC_INT_10	START_ANALOG_PIN_NUMBER+2
-#define PC_INT_11	START_ANALOG_PIN_NUMBER+3
-#define PC_INT_12	START_ANALOG_PIN_NUMBER+4
-#define PC_INT_13	START_ANALOG_PIN_NUMBER+5
-#define PC_INT_14	START_ANALOG_PIN_NUMBER+6
+#define PC_INT_8	17
+#define PC_INT_9	18
+#define PC_INT_10	19
+#define PC_INT_11	20
+#define PC_INT_12	21
+#define PC_INT_13	22
+#define PC_INT_14	16
 #define PC_INT_16	0
 #define PC_INT_17	1
 #define PC_INT_18	2

@@ -136,22 +136,22 @@
 #define pwm12	12
 #define pwm13	13	// using as timer 0 channel A only! You must to use psevdoname T1C for timer 1 channel C on pin 13!
 
-#define Analog0		START_ANALOG_PIN_NUMBER + 0
-#define Analog1		START_ANALOG_PIN_NUMBER + 1
-#define Analog2		START_ANALOG_PIN_NUMBER + 2
-#define Analog3		START_ANALOG_PIN_NUMBER + 3
-#define Analog4		START_ANALOG_PIN_NUMBER + 4
-#define Analog5		START_ANALOG_PIN_NUMBER + 5
-#define Analog6		START_ANALOG_PIN_NUMBER + 6
-#define Analog7		START_ANALOG_PIN_NUMBER + 7
-#define Analog8		START_ANALOG_PIN_NUMBER + 8
-#define Analog9		START_ANALOG_PIN_NUMBER + 9
-#define Analog10	START_ANALOG_PIN_NUMBER + 10
-#define Analog11	START_ANALOG_PIN_NUMBER + 11
-#define Analog12	START_ANALOG_PIN_NUMBER + 12
-#define Analog13	START_ANALOG_PIN_NUMBER + 13
-#define Analog14	START_ANALOG_PIN_NUMBER + 14
-#define Analog15	START_ANALOG_PIN_NUMBER + 15
+#define Analog0		54
+#define Analog1		55
+#define Analog2		56
+#define Analog3		57
+#define Analog4		58
+#define Analog5		59
+#define Analog6		60
+#define Analog7		61
+#define Analog8		62
+#define Analog9		63
+#define Analog10	64
+#define Analog11	65
+#define Analog12	66
+#define Analog13	67
+#define Analog14	68
+#define Analog15	69
 
 // input pin for: "GND-pin" analog read
 // p:[0..15]
