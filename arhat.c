@@ -23,6 +23,10 @@
 #define ARHAT_MODE 2        // need in this file!
 #include "arhat.h"
 
+volatile uint32_t       timer0_overflow_count   = 0UL;  // timer overflow counter. Счетчик переполнений таймера 0 "тиков" по 1024мксек.
+volatile void        (* timer0_hook)(void)      = 0;    // hook function pointer. функция "хук", вызываемая из обработчика, если надо.
+uint8_t                 timer0_hook_run         = 0;    // hook is running. Blocking twice calling. защелка, запрещающая повторный вызов.
+
 /**
  * Volatile read count TOV interrupt
  * 24 bytes, 19 cycles (1.1875mcsec.)
@@ -195,6 +199,166 @@ void time_init()
     timerControl(TIME_DEFAULT, A) |= TIME_MODE;
     timerControl(TIME_DEFAULT, B) |= prescalerMode(TIME_PRESCALLER);
     timerIMask(TIME_DEFAULT, OVF, 1);
+}
+
+/**
+ * Timer interrupt by Overflow Flag up each (TIMER_TICK_MCS*TIMER_MAX_COUNT) microseconds.
+ *
+ * Пользуемся побайтовой арифметикой: считали - добавили - сохранили.
+ * Экономим регистры и команды:
+ * "С" verison   = 158 bytes;
+ * "ASM" version = 102 bytes, 46/51/75 cycles: 2.875mcsec for timer0_hook=0 and 4.6875 mcsec for empty call
+ *
+ * ISR(ISRtimer(TIME_DEFAULT, TIME_ISR), ISR_NAKED)
+ *
+ * equal this:
+ *
+ * void __vector_ 23(void) __attribute__ ((signal, used, externally_visible)) __attribute__((naked));
+ * void __vector_ 23(void)
+ */
+ISR(ISRtimer(TIME_DEFAULT, TIME_ISR), ISR_NAKED)
+//ISR(ISRtimer(TIME_DEFAULT, TIME_ISR))
+{
+/* C version:
+
+    timer0_overflow_count++;
+
+    if( timer0_hook && !timer0_hook_run ){
+        timer0_hook_run = 1;
+        sei();
+        timer0_hook();
+        cli();
+        timer0_hook_run = 0;
+    }
+}
+*/
+    asm volatile(
+        "    push r30               \n\t"
+        "    push r31               \n\t"
+        "    in r30,__SREG__        \n\t"
+        "    push r30               \n\t"
+
+        "    lds r30,timer0_overflow_count   \n\t"
+        "    lds r31,timer0_overflow_count+1 \n\t"
+        "    adiw r30,1                      \n\t"
+        "    sts timer0_overflow_count,r30   \n\t"
+        "    sts timer0_overflow_count+1,r31 \n\t"
+        "    clr r31                         \n\t"
+        "    lds r30,timer0_overflow_count+2 \n\t"
+        "    adc r30,r31                     \n\t"
+        "    sts timer0_overflow_count+2,r30 \n\t"
+        "    lds r30,timer0_overflow_count+3 \n\t"
+        "    adc r30,r31                     \n\t"
+        "    sts timer0_overflow_count+3,r30 \n\t"
+
+        #if defined(ARHAT_MODE) && (ARHAT_MODE == 3)
+        "    lds r30,timer0_hook                 ; if( timer0_hook && !timer0_hook_run ){\n\t"
+        "    lds r31,timer0_hook+1                                                       \n\t"
+        "    or  r30,r31                         ; (LByte | HByte) == 0?                 \n\t"
+        "    brne .L2                                                                    \n\t"
+        "    rjmp .L1             \n\t"
+        ".L2:                     \n\t"
+        "    lds r30,timer0_hook_run                                                     \n\t"
+        "    tst r30                             ; r30 & r30 != 0?                       \n\t"
+        "    breq .L3                                                                    \n\t"
+        "    rjmp .L1             \n\t"
+        ".L3:                     \n\t"
+
+        "    inc r30                             ; timer0_hook_run = 1; \n\t"
+        "    sts timer0_hook_run,r30                                    \n\t"
+        "    lds r30,timer0_hook                 ; timer0_hook();       \n\t"
+        "    lds r31,timer0_hook+1                                      \n\t"
+
+        ::
+    );
+    pushAllRegs();
+    asm volatile(
+        "    sei   \n\t"
+        "    icall \n\t"
+        "    cli   \n\t"
+        ::
+    );
+    popAllRegs();
+    asm volatile(
+        /*
+         *    "    push r0               \n\t"
+         *    "    push r1               \n\t"
+         *    "    push r2               \n\t"
+         *    "    push r3               \n\t"
+         *    "    push r4               \n\t"
+         *    "    push r5               \n\t"
+         *    "    push r6               \n\t"
+         *    "    push r7               \n\t"
+         *    "    push r8               \n\t"
+         *    "    push r9               \n\t"
+         *    "    push r10               \n\t"
+         *    "    push r11               \n\t"
+         *    "    push r12               \n\t"
+         *    "    push r13               \n\t"
+         *    "    push r14               \n\t"
+         *    "    push r15               \n\t"
+         *    "    push r16               \n\t"
+         *    "    push r17               \n\t"
+         *    "    push r18               \n\t"
+         *    "    push r19               \n\t"
+         *    "    push r20               \n\t"
+         *    "    push r21               \n\t"
+         *    "    push r22               \n\t"
+         *    "    push r23               \n\t"
+         *    "    push r24               \n\t"
+         *    "    push r25               \n\t"
+         *    "    push r26               \n\t"
+         *    "    push r27               \n\t"
+         *    "    push r28               \n\t"
+         *    "    push r29               \n\t"
+         *
+         *    "    sei                                                        \n\t"
+         *    "    icall                                                      \n\t"
+         *    "    cli                                                        \n\t"
+         *
+         *    "    pop r29          \n\t"
+         *    "    pop r28          \n\t"
+         *    "    pop r27          \n\t"
+         *    "    pop r26          \n\t"
+         *    "    pop r25          \n\t"
+         *    "    pop r24          \n\t"
+         *    "    pop r23          \n\t"
+         *    "    pop r22          \n\t"
+         *    "    pop r21          \n\t"
+         *    "    pop r20          \n\t"
+         *    "    pop r19          \n\t"
+         *    "    pop r18          \n\t"
+         *    "    pop r17          \n\t"
+         *    "    pop r16          \n\t"
+         *    "    pop r15          \n\t"
+         *    "    pop r14          \n\t"
+         *    "    pop r13          \n\t"
+         *    "    pop r12          \n\t"
+         *    "    pop r11          \n\t"
+         *    "    pop r10          \n\t"
+         *    "    pop r9           \n\t"
+         *    "    pop r8           \n\t"
+         *    "    pop r7           \n\t"
+         *    "    pop r6           \n\t"
+         *    "    pop r5           \n\t"
+         *    "    pop r4           \n\t"
+         *    "    pop r3           \n\t"
+         *    "    pop r2           \n\t"
+         *    "    pop r1           \n\t"
+         *    "    pop r0           \n\t"
+         */
+        "    clr r31                                                    \n\t"
+        "    sts timer0_hook_run,r31             ; timer0_hook_run = 0; \n\t"
+        ".L1:                  \n\t"
+        #endif // ARHAT_MODE == 3
+        "    pop r30           \n\t"
+        "    out __SREG__,r30  \n\t"
+        "    pop r31           \n\t"
+        "    pop r30           \n\t"
+        "    reti              \n\t"
+        ::
+    );
+
 }
 
 // ======================== ADC ======================== //
