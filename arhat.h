@@ -2,7 +2,7 @@
  * Main header file for small sketchs by Arduino IDE
  * version 1.1 for ATmega2560, Atmega328p CPU
  *
- * Библиотека для уменьшения размеров скетчей и улучшения их работы
+ * Wiring++: Библиотека для уменьшения размеров скетчей и улучшения их работы
  *
  * Подключение библиотеки:
  * 1. ПЕРЕД подключением этой библиотеки можно, но не обязательно указать режим работы в виде определения константы ARHAT_MODE:
@@ -28,6 +28,12 @@
  * #define ARHAT_MODE 1
  * #include "arhat.h"
  *
+ * !!!ВНИМАНИЕ!!! В связи с изменением логики Wiring, начиная с версии 1.6.7, а именно: принудительная вставка оператора
+ * #include "Arduino.h" в первую строку любого скетча, механизм приедложенный тут по его "выключению" - теперь не работает!
+ *
+ * Компилятор может выдавать очень много ошибок по переопределению констант тут - можно не обращать внимания или
+ * вернуться на версию ИДЕ 1.6.4, 1.6.5
+ *
  * @author Arhat109-20150604(started). arhat109@mail.ru
  * @license:
  *   1. This is a free software for any using and distributing without any warranties.
@@ -47,15 +53,14 @@
  * leshak, gregoryl  -- @see https://bitbucket.org/alxarduino/leshakutils
  * autors Cyberlib.h -- @see http://www.cyber-place.ru/showthread.php?p=3789#post3789
  *
+ * As it use -- see comments in this file for any macros and definitions
  * Кратко "как пользоваться" смотреть в комментариях к каждому определению тут.
- * v1.0 changes: #define _ARHAT_ 1 is deprecated and not use more.
- * Изменения: макрос _ARHAT_ определять больше не надо. Режим совместимости с Wiring не поддерживается.
  */
 
 #ifndef _ARHAT_H_
 #define _ARHAT_H_
 
-// Schema all default includes for this file. Simple search if need
+// Schema all default includes for this file. For simple search if need
 // Схема всех подключаемых хидеров. Для справки, дабы проще искать
 #include <avr/pgmspace.h>
 /* pgmspace.h  are defining macros for use programm memory for data storage. Autoincluding:
@@ -171,55 +176,7 @@
 #  error "*** ERROR! Unknown processor type! Add your pins file into arhat.h before use it ***"
 #endif
 
-/* ============= private level 2. NOT USE IT in your sketches !!! ============= */
-/* ПРИВАТНАЯ СЕКЦИЯ! НЕ ИСПОЛЬЗОВАТЬ ЭТИ МАКРОСЫ В СКЕТЧАХ. Ну или только сознательно */
-#define _d_in(p)        (D##p##_In)
-#define _d_out(p)       (D##p##_Out)
-#define _d_high(p)      (D##p##_High)
-#define _d_low(p)       (D##p##_Low)
-#define _d_inv(p)       (D##p##_Inv)
-#define _d_read(p)      (D##p##_Read)
-
-#define _pin(p)         (pin##p)
-
-#define pinDirReg(p)    (DREG##p)
-#define pinOutReg(p)    (OREG##p)
-#define pinInReg(p)     (IREG##p)
-#define pinSetMask(p)   (BSET##p)
-#define pinClearMask(p) (BCLR##p)
-
-#define _pwmGetTimer(p)         getTimer##p
-#define _pwmGetChannel(p)       getTimerChannel##p
-
-#define _timerCount(t)          (TCNT##t)
-#define _timerControl(t,r)      (TCCR##t##r)
-#define _timerCompare(t,r)      (OCR##t##r)
-#define _timerCapture(t)        (ICR##t)
-#define _timerIMask(t,v,b)      ((b)? (TIMSK##t |= (TIF_##v)) : (TIMSK##t &= ~(TIF_##v)))
-#define _timerIFlag(t,v)        (TIFR##t & (TIF_##v))
-#define _ISRtimer(t,v)          (TIMER##t##_##v##_vect)
-#define _prescalerMode(pr)      (TCLK_##pr)
-
-#define __pwmMaskMode0(t,c)       (0)
-#define __pwmMaskMode1(t,c)       (1<<COM##t##c##0)
-#define __pwmMaskMode2(t,c)       (1<<COM##t##c##1)
-#define __pwmMaskMode3(t,c)       ((1<<COM##t##c##1)|(1<<COM##t##c##0))
-
-#define _pwmMaskMode0(t,c)        __pwmMaskMode0(t,c)
-#define _pwmMaskMode1(t,c)        __pwmMaskMode1(t,c)
-#define _pwmMaskMode2(t,c)        __pwmMaskMode2(t,c)
-#define _pwmMaskMode3(t,c)        __pwmMaskMode3(t,c)
-
-#define _pwmPinMask(t,c,m)      (_pwmMaskMode##m(t,c))
-
-#define _pwmSet(p)              (setPWM##p)
-#define _pwmOff(p)              (offPWM##p)
-#define _pwmWrite(p,v)          (outPWM##p(v))
-
-#define _analogPin(p)           (Analog##p)
-#define _admuxSrc(s)            (ADC_SRC_##s)
-
-#define _ISRusart(t,v)          (USART##t##_##v##_vect)
+#include "arhat_private.h"
 
 // ========================================================================== //
 // Public section: macros for use with constants pin numbers only!            //
@@ -248,14 +205,14 @@
 // defaults timer0 timers functions and interrupts such in wiring
 // Константы настройки таймера 0 совместимые с wiring: таймер работает по 4мксек.
 #ifndef TIME_DEFAULT                    /* all defaults for F_CPU=16Mhz ONLY! */
-  #define TIME_DEFAULT             0
-  #define TIME_MAX_COUNTER       256    /* max conter+1                                               */
-  #define TIME_PRESCALLER         64
-  #define TIME_MODE                3    /* WGM10 = 1, WGM00 = 1 fast-PWM mode for timer0              */
-  #define TIME_TICK_MCS            4    /* 1 tick by prescaler:[0.25, 0.5, 4, 16, 64] in microseconds */
-  #define TIME_SHIFT               2    /* From prescaller: 1=>4, 8=>1, 64=>2, 256=>4, 1024=>6        */
-  #define TIME_MCS2MS      1024/1000    /* ==[16,128,1024,4096,16384]/1000 by prescaler               */
-  #define TIME_ISR               OVF    /* what interrupt name using for this timer                   */
+#  define TIME_DEFAULT             0
+#  define TIME_MAX_COUNTER       256    /* max conter+1                                               */
+#  define TIME_PRESCALLER         64
+#  define TIME_MODE                3    /* WGM10 = 1, WGM00 = 1 fast-PWM mode for timer0              */
+#  define TIME_TICK_MCS            4    /* 1 tick by prescaler:[0.25, 0.5, 4, 16, 64] in microseconds */
+#  define TIME_SHIFT               2    /* From prescaller: 1=>4, 8=>1, 64=>2, 256=>4, 1024=>6        */
+#  define TIME_MCS2MS      1024/1000    /* ==[16,128,1024,4096,16384]/1000 by prescaler               */
+#  define TIME_ISR               OVF    /* what interrupt name using for this timer                   */
 #endif
 
 /* =========== Pin works. Работа с цифровыми входами и выходами 1 командой ============= */
@@ -409,7 +366,7 @@ admux2Gain(src,neg,poz,g,adlar)                              \
 //   analogWrite(pwm12, analogRead(pin54)>>4);
 // });
 //
-// или так: everyMillis(1000, blink() );
+// or such use (или так): everyMillis(1000, blink() );
 //
 // @param void (*)(void) action;
 // @param uint32_t       interval; [milliseconds]
@@ -487,8 +444,6 @@ extern "C" {
 extern volatile uint32_t timer0_overflow_count;
 
 // @see arhat.c
-void          pushAllRegs(void);                // save on stack all context with correct move return point
-void          popAllRegs(void);                 // load context from stack, was saved by pushAllRegs()
 
 void          time_init(void);                  // init timer with TIME_DEFAULT section in arhat_time.c
 uint32_t      time_micros(void);                // microseconds upto 1.19 hour
@@ -573,180 +528,6 @@ typedef bool boolean;           // need in WString.h, WCharacter.h !
 #endif
 
 #endif // __cplusplus {compatible and not realised yet }
-
-// ================================================================================================================== //
-// Definition for timer 0 OVF count interrupt included for arhat.c ONLY!                                              //
-// Определение обработчика прерывания __vector_23() (timer 0 ovf count) подключается только для компиляции arhat.c    //
-// ================================================================================================================== //
-#ifdef ARHAT_C
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-volatile uint32_t       timer0_overflow_count   = 0UL;  // timer overflow counter. Счетчик переполнений таймера 0 "тиков" по 1024мксек.
-void                 (* timer0_hook)(void)      = 0;    // hook function pointer. функция "хук", вызываемая из обработчика, если надо.
-uint8_t                 timer0_hook_run         = 0;    // hook is running. Blocking twice calling. защелка, запрещающая повторный вызов до возврата из хука.
-
-/**
- * Timer interrupt by Overflow Flag up each (TIMER_TICK_MCS*TIMER_MAX_COUNT) microseconds.
- *
- * Пользуемся побайтовой арифметикой: считали - добавили - сохранили.
- * Экономим регистры и команды:
- * "С" verison   = 158 bytes;
- * "ASM" version = 102 bytes, 46/51/75 cycles: 2.875mcsec for timer0_hook=0 and 4.6875 mcsec for empty call
- *
- * ISR(ISRtimer(TIME_DEFAULT, TIME_ISR), ISR_NAKED)
- *
- * equal this:
- *
- * void __vector_ 23(void) __attribute__ ((signal, used, externally_visible)) __attribute__((naked));
- * void __vector_ 23(void)
- */
-ISR(ISRtimer(TIME_DEFAULT, TIME_ISR), ISR_NAKED)
-//ISR(ISRtimer(TIME_DEFAULT, TIME_ISR))
-{
-/* C version:
- *
-    timer0_overflow_count++;
-    if( timer0_hook && !timer0_hook_run ){
-        timer0_hook_run = 1;
-        sei();
-        timer0_hook();
-        cli();
-        timer0_hook_run = 0;
-    }
-*/
-  asm volatile(
-    "    push r30               \n\t"
-    "    push r31               \n\t"
-    "    in r30,__SREG__        \n\t"
-    "    push r30               \n\t"
-
-    "    lds r30,timer0_overflow_count   \n\t"
-    "    lds r31,timer0_overflow_count+1 \n\t"
-    "    adiw r30,1                      \n\t"
-    "    sts timer0_overflow_count,r30   \n\t"
-    "    sts timer0_overflow_count+1,r31 \n\t"
-    "    clr r31                         \n\t"
-    "    lds r30,timer0_overflow_count+2 \n\t"
-    "    adc r30,r31                     \n\t"
-    "    sts timer0_overflow_count+2,r30 \n\t"
-    "    lds r30,timer0_overflow_count+3 \n\t"
-    "    adc r30,r31                     \n\t"
-    "    sts timer0_overflow_count+3,r30 \n\t"
-
-#if defined(ARHAT_MODE) && (ARHAT_MODE == 3)
-    "    lds r30,timer0_hook                 ; if( timer0_hook && !timer0_hook_run ){\n\t"
-    "    lds r31,timer0_hook+1                                                       \n\t"
-    "    or  r30,r31                         ; (LByte | HByte) == 0?                 \n\t"
-    "    brne .L2                                                                    \n\t"
-    "    rjmp .L1             \n\t"
-    ".L2:                     \n\t"
-    "    lds r30,timer0_hook_run                                                     \n\t"
-    "    tst r30                             ; r30 & r30 != 0?                       \n\t"
-    "    breq .L3                                                                    \n\t"
-    "    rjmp .L1             \n\t"
-    ".L3:                     \n\t"
-
-    "    inc r30                             ; timer0_hook_run = 1; \n\t"
-    "    sts timer0_hook_run,r30                                    \n\t"
-    "    lds r30,timer0_hook                 ; timer0_hook();       \n\t"
-    "    lds r31,timer0_hook+1                                      \n\t"
-
-    ::
-  );
-  pushAllRegs();
-  asm volatile(
-    "    sei   \n\t"
-    "    icall \n\t"
-    "    cli   \n\t"
-    ::
-  );
-  popAllRegs();
-  asm volatile(
-/*
-    "    push r0               \n\t"
-    "    push r1               \n\t"
-    "    push r2               \n\t"
-    "    push r3               \n\t"
-    "    push r4               \n\t"
-    "    push r5               \n\t"
-    "    push r6               \n\t"
-    "    push r7               \n\t"
-    "    push r8               \n\t"
-    "    push r9               \n\t"
-    "    push r10               \n\t"
-    "    push r11               \n\t"
-    "    push r12               \n\t"
-    "    push r13               \n\t"
-    "    push r14               \n\t"
-    "    push r15               \n\t"
-    "    push r16               \n\t"
-    "    push r17               \n\t"
-    "    push r18               \n\t"
-    "    push r19               \n\t"
-    "    push r20               \n\t"
-    "    push r21               \n\t"
-    "    push r22               \n\t"
-    "    push r23               \n\t"
-    "    push r24               \n\t"
-    "    push r25               \n\t"
-    "    push r26               \n\t"
-    "    push r27               \n\t"
-    "    push r28               \n\t"
-    "    push r29               \n\t"
-
-    "    sei                                                        \n\t"
-    "    icall                                                      \n\t"
-    "    cli                                                        \n\t"
-
-    "    pop r29          \n\t"
-    "    pop r28          \n\t"
-    "    pop r27          \n\t"
-    "    pop r26          \n\t"
-    "    pop r25          \n\t"
-    "    pop r24          \n\t"
-    "    pop r23          \n\t"
-    "    pop r22          \n\t"
-    "    pop r21          \n\t"
-    "    pop r20          \n\t"
-    "    pop r19          \n\t"
-    "    pop r18          \n\t"
-    "    pop r17          \n\t"
-    "    pop r16          \n\t"
-    "    pop r15          \n\t"
-    "    pop r14          \n\t"
-    "    pop r13          \n\t"
-    "    pop r12          \n\t"
-    "    pop r11          \n\t"
-    "    pop r10          \n\t"
-    "    pop r9           \n\t"
-    "    pop r8           \n\t"
-    "    pop r7           \n\t"
-    "    pop r6           \n\t"
-    "    pop r5           \n\t"
-    "    pop r4           \n\t"
-    "    pop r3           \n\t"
-    "    pop r2           \n\t"
-    "    pop r1           \n\t"
-    "    pop r0           \n\t"
-*/
-    "    clr r31                                                    \n\t"
-    "    sts timer0_hook_run,r31             ; timer0_hook_run = 0; \n\t"
-    ".L1:                  \n\t"
-#endif // ARHAT_MODE == 3
-    "    pop r30           \n\t"
-    "    out __SREG__,r30  \n\t"
-    "    pop r31           \n\t"
-    "    pop r30           \n\t"
-    "    reti              \n\t"
-    ::
-  );
-
-}
-
-#endif // ARHAT_C
 
 // need redefined after all includes .cpp headers!
 #define time_init()             init()
