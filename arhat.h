@@ -178,6 +178,10 @@
 
 #include "arhat_private.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // ========================================================================== //
 // Public section: macros for use with constants pin numbers only!            //
 // ========================================================================== //
@@ -201,19 +205,6 @@
 #define D_Low(p)        (_d_low(p))
 #define D_Inv(p)        (_d_inv(p))
 #define D_Read(p)       (_d_read(p))
-
-// defaults timer0 timers functions and interrupts such in wiring
-// Константы настройки таймера 0 совместимые с wiring: таймер работает по 4мксек.
-#ifndef TIME_DEFAULT                    /* all defaults for F_CPU=16Mhz ONLY! */
-#  define TIME_DEFAULT             0
-#  define TIME_MAX_COUNTER       256    /* max conter+1                                               */
-#  define TIME_PRESCALLER         64
-#  define TIME_MODE                3    /* WGM10 = 1, WGM00 = 1 fast-PWM mode for timer0              */
-#  define TIME_TICK_MCS            4    /* 1 tick by prescaler:[0.25, 0.5, 4, 16, 64] in microseconds */
-#  define TIME_SHIFT               2    /* From prescaller: 1=>4, 8=>1, 64=>2, 256=>4, 1024=>6        */
-#  define TIME_MCS2MS      1024/1000    /* ==[16,128,1024,4096,16384]/1000 by prescaler               */
-#  define TIME_ISR               OVF    /* what interrupt name using for this timer                   */
-#endif
 
 /* =========== Pin works. Работа с цифровыми входами и выходами 1 командой ============= */
 
@@ -419,6 +410,71 @@ admux2Gain(src,neg,poz,g,adlar)                              \
        :: "w" (__count)       \
         )
 
+// ================================================================================================================= //
+//                                     Definitions for PCINT interrupt workers                                       //
+// Определения и реализация конечных автоматов для замера длительностей или подсчета срабатываний прерываний PCINTх  //
+// ================================================================================================================= //
+#define PULSE_BUSY      1               // состояние измерителя "занят, идет замер"
+#define PULSE_SECOND    2               // измеритель "занят, вычисление длительности"
+#define PULSE_OK        3               // "замер произведен, данные верны"
+#define PULSE_RAISING   10              // "энкодер по фронту сигнала"
+#define PULSE_FAILING   11              // "энкодер по спаду сигнала"
+#define PULSE_BOTH      12              // "считаем и фронт и спад"
+#define PULSE_TIMER     32              // "ошибка по таймауту" нет сигнала или дальность больше предельной
+#define PULSE_ERROR     33              // "прочие ошибки измерений"
+
+// public block for PCINT registers and this global variables:
+#define PCINT_DDR(n)            _pcint_DDR(n)
+#define PCINT_PORT(n)           _pcint_PORT(n)
+#define PCINT_PIN(n)            _pcint_PIN(n)
+#define PCINT_MSK(n)            _pcint_msk(n)
+#define PCINT_NAME(n)           _pcint_name(n)
+
+#define PCINT_pin2number(n,p)   _pcint_tonumber(n,p)
+
+#define PCINT_numbers(n)        _pcint_numbers(n)
+#define PCINT_old(n)            _pcint_old(n)
+
+// как считать импульсы от энкодеров? фронтом, спадом или оба изменения
+enum EdgeType {PCINT_FAILING=0, PCINT_RAISING=1, PCINT_BOTH=2};
+
+typedef void (*PcintMethod)( void *ptrPulse, uint8_t );         // функции-обработчики прерывания "способ обработки".
+
+typedef struct {
+  uint32_t      res;                    // valid or not valid data from method: результат измерения сложен сюда
+  PcintMethod   method;                 // interrupt function for DO: pcint_xxx() способ "как измеряем"
+  uint16_t      timeout;                // timeout for pulseIn() <65.5sec.! таймаут проведения замера (длительность)
+  uint16_t      start;                  // when was start for timeout control. Время запуска для таймаутов
+  uint8_t       state;                  // @see PULSE_STATES constants status for this measuring. Состояние замера
+  uint8_t       pin;                    // local interrupt pin:[0..7] for this measuring and PCINT level in 6,7 bit
+} Pulse;
+#define ptrPulse(ptr)           ((Pulse *)(ptr))        // converter to Pulse*
+
+extern Pulse    pulses[];               // One array for all measures! Один список для всех обработчиков измерений!
+extern uint8_t  pcint0old;              // состояние пинов прерываний "предыдущее"
+extern uint8_t  pcint0numbers[];        // текущие номера КА из pulses[], измеряющие на пинах 62..69 = 8шт!
+extern uint8_t  pcint1old;              // состояние пинов прерываний "предыдущее"
+extern uint8_t  pcint1numbers[];        // текущие номера КА из pulses[], измеряющие на пинах 62..69 = 8шт!
+extern uint8_t  pcint2old;              // состояние пинов прерываний "предыдущее"
+extern uint8_t  pcint2numbers[];        // текущие номера КА из pulses[], измеряющие на пинах 62..69 = 8шт!
+
+void pcint_end(Pulse * ptrPulse, uint8_t error);        // завершает обработку замера, запрещает прерывание от ноги
+void pcint_timeout(void *ptrPulse);                     // местная функция для КА "не дождался"
+void pcint_micros( void *ptr, uint8_t oldBit );         // способ замера: "замер длительности импукльса от фронта до спада"
+void pcint_encoder( void *ptr, uint8_t oldBit );        //    ещё способ: "подсчет количества фронтов/спадов/.. до таймаута"
+
+uint8_t  pcint0_init(uint8_t pulseID, uint8_t pin, uint8_t state, PcintMethod method, uint16_t timeout);
+void     pcint0_start(uint8_t intNumber);
+uint16_t pulseIn0(uint8_t pulseId, void (*action)(void));
+
+uint8_t  pcint1_init(uint8_t pulseID, uint8_t pin, uint8_t state, PcintMethod method, uint16_t timeout);
+void     pcint1_start(uint8_t intNumber);
+uint16_t pulseIn1(uint8_t pulseId, void (*action)(void));
+
+uint8_t  pcint2_init(uint8_t pulseID, uint8_t pin, uint8_t state, PcintMethod method, uint16_t timeout);
+void     pcint2_start(uint8_t intNumber);
+uint16_t pulseIn2(uint8_t pulseId, void (*action)(void));
+
 // ============= Macro for #includes Макросы для подключаемых файлов  ============== //
 // ================================================================================= //
 // Compiler mode ONLY! Use as digits into #define TWI_ON before include this file ONLY!
@@ -428,11 +484,9 @@ admux2Gain(src,neg,poz,g,adlar)                              \
 #define TWI_IS_SLAVE_TX  8
 //#define TWI_LOG_ON      16
 
-// ============= COMMON LIBRARY: functions from *.c files only ============= //
-#ifdef __cplusplus
-extern "C" {
-#endif
-
+// ================================================================================================================= //
+//                                    COMMON LIBRARY: functions from *.c files only                                  //
+// ================================================================================================================= //
 #define min(a,b)                ((a)<(b)?(a):(b))
 #define max(a,b)                ((a)>(b)?(a):(b))
 #define constrain(amt,low,high) ((amt)<(low)?(low):((amt)>(high)?(high):(amt)))
@@ -484,6 +538,9 @@ void loop(void);
 // ------------------------------------------------------------------------------------------------------------------ //
 // замена типовых функций на макросы. Номера пинов платы - только через числовые константы. НЕ в памяти!              //
 // ================================================================================================================== //
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // Blocking. Not used standart Arduino.h header!
 // Режим минимизации кода через константные номера пинов: отключаем хидер Arduino.h и переопределяем типовые функции в макросы
@@ -514,6 +571,7 @@ extern void                       (* timer0_hook)(void);        // callback func
 
 // not released yet. From Wiring for compatible:
 #ifdef __cplusplus
+}
 
 #include <stdbool.h>
 typedef bool boolean;           // need in WString.h, WCharacter.h !

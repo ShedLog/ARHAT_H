@@ -53,3 +53,15 @@
 
 #define _ISRusart(t,v)          (USART##t##_##v##_vect)
 
+#define _pcint_DDR(n)           PCINT##n##_DDR
+#define _pcint_PORT(n)          PCINT##n##_PORT
+#define _pcint_PIN(n)           PCINT##n##_PIN
+#define _pcint_msk(n)           PCMSK##n
+#define _pcint_name(n)          PCINT##n##_vect
+
+#define _pcint_tonumber(n,p)    PCINT##n##_pin2number(p)
+
+#define _pcint_numbers(n)       pcint##n##numbers
+#define _pcint_old(n)           pcint##n##old
+#define _pcint_pulses(n)        pulses##n
+

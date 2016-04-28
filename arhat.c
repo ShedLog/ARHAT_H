@@ -20,8 +20,21 @@
  */
 
 #define ARHAT_C 1           // need for includes interrupt function in this file only.
-#define ARHAT_MODE 2        // need in this file!
+#define ARHAT_MODE 3        // need in this file!
 #include "arhat.h"
+
+// defaults timer0 timers functions and interrupts such in wiring
+// Константы настройки таймера 0 совместимые с wiring: таймер работает по 4мксек.
+#ifndef TIME_DEFAULT                    /* all defaults for F_CPU=16Mhz ONLY! */
+#  define TIME_DEFAULT             0
+#  define TIME_MAX_COUNTER       256    /* max conter+1                                               */
+#  define TIME_PRESCALLER         64
+#  define TIME_MODE                3    /* WGM10 = 1, WGM00 = 1 fast-PWM mode for timer0              */
+#  define TIME_TICK_MCS            4    /* 1 tick by prescaler:[0.25, 0.5, 4, 16, 64] in microseconds */
+#  define TIME_SHIFT               2    /* From prescaller: 1=>4, 8=>1, 64=>2, 256=>4, 1024=>6        */
+#  define TIME_MCS2MS      1024/1000    /* ==[16,128,1024,4096,16384]/1000 by prescaler               */
+#  define TIME_ISR               OVF    /* what interrupt name using for this timer                   */
+#endif
 
 volatile uint32_t       timer0_overflow_count   = 0UL;  // timer overflow counter. Счетчик переполнений таймера 0 "тиков" по 1024мксек.
 volatile void        (* timer0_hook)(void)      = 0;    // hook function pointer. функция "хук", вызываемая из обработчика, если надо.
@@ -251,106 +264,48 @@ ISR(ISRtimer(TIME_DEFAULT, TIME_ISR), ISR_NAKED)
         "    adc r30,r31                     \n\t"
         "    sts timer0_overflow_count+3,r30 \n\t"
 
-        #if defined(ARHAT_MODE) && (ARHAT_MODE == 3)
+#if defined(ARHAT_MODE) && (ARHAT_MODE == 3)
+/*
         "    lds r30,timer0_hook                 ; if( timer0_hook && !timer0_hook_run ){\n\t"
         "    lds r31,timer0_hook+1                                                       \n\t"
         "    or  r30,r31                         ; (LByte | HByte) == 0?                 \n\t"
-        "    brne .L2                                                                    \n\t"
-        "    rjmp .L1             \n\t"
-        ".L2:                     \n\t"
+        "    breq .L1                                                                    \n\t"
         "    lds r30,timer0_hook_run                                                     \n\t"
         "    tst r30                             ; r30 & r30 != 0?                       \n\t"
-        "    breq .L3                                                                    \n\t"
-        "    rjmp .L1             \n\t"
-        ".L3:                     \n\t"
-
+        "    brne .L1                                                                    \n\t"
         "    inc r30                             ; timer0_hook_run = 1; \n\t"
         "    sts timer0_hook_run,r30                                    \n\t"
         "    lds r30,timer0_hook                 ; timer0_hook();       \n\t"
         "    lds r31,timer0_hook+1                                      \n\t"
-
-        ::
-    );
-    pushAllRegs();
-    asm volatile(
         "    sei   \n\t"
-        "    icall \n\t"
-        "    cli   \n\t"
+*/
         ::
     );
-    popAllRegs();
+
+    if( timer0_hook && !timer0_hook_run ){
+        timer0_hook_run = 1;
+//        pushAllRegs();
+        sei();
+        timer0_hook();
+        cli();
+        timer0_hook_run = 0;
+/*
     asm volatile(
-        /*
-         *    "    push r0               \n\t"
-         *    "    push r1               \n\t"
-         *    "    push r2               \n\t"
-         *    "    push r3               \n\t"
-         *    "    push r4               \n\t"
-         *    "    push r5               \n\t"
-         *    "    push r6               \n\t"
-         *    "    push r7               \n\t"
-         *    "    push r8               \n\t"
-         *    "    push r9               \n\t"
-         *    "    push r10               \n\t"
-         *    "    push r11               \n\t"
-         *    "    push r12               \n\t"
-         *    "    push r13               \n\t"
-         *    "    push r14               \n\t"
-         *    "    push r15               \n\t"
-         *    "    push r16               \n\t"
-         *    "    push r17               \n\t"
-         *    "    push r18               \n\t"
-         *    "    push r19               \n\t"
-         *    "    push r20               \n\t"
-         *    "    push r21               \n\t"
-         *    "    push r22               \n\t"
-         *    "    push r23               \n\t"
-         *    "    push r24               \n\t"
-         *    "    push r25               \n\t"
-         *    "    push r26               \n\t"
-         *    "    push r27               \n\t"
-         *    "    push r28               \n\t"
-         *    "    push r29               \n\t"
-         *
-         *    "    sei                                                        \n\t"
-         *    "    icall                                                      \n\t"
-         *    "    cli                                                        \n\t"
-         *
-         *    "    pop r29          \n\t"
-         *    "    pop r28          \n\t"
-         *    "    pop r27          \n\t"
-         *    "    pop r26          \n\t"
-         *    "    pop r25          \n\t"
-         *    "    pop r24          \n\t"
-         *    "    pop r23          \n\t"
-         *    "    pop r22          \n\t"
-         *    "    pop r21          \n\t"
-         *    "    pop r20          \n\t"
-         *    "    pop r19          \n\t"
-         *    "    pop r18          \n\t"
-         *    "    pop r17          \n\t"
-         *    "    pop r16          \n\t"
-         *    "    pop r15          \n\t"
-         *    "    pop r14          \n\t"
-         *    "    pop r13          \n\t"
-         *    "    pop r12          \n\t"
-         *    "    pop r11          \n\t"
-         *    "    pop r10          \n\t"
-         *    "    pop r9           \n\t"
-         *    "    pop r8           \n\t"
-         *    "    pop r7           \n\t"
-         *    "    pop r6           \n\t"
-         *    "    pop r5           \n\t"
-         *    "    pop r4           \n\t"
-         *    "    pop r3           \n\t"
-         *    "    pop r2           \n\t"
-         *    "    pop r1           \n\t"
-         *    "    pop r0           \n\t"
-         */
+        "    eicall \n\t"
+//        "    cli    \n\t"
+        ::
+    );
+*/
+//        popAllRegs();
+    }
+    asm volatile(
+/*
+        "    cli   \n\t"
         "    clr r31                                                    \n\t"
         "    sts timer0_hook_run,r31             ; timer0_hook_run = 0; \n\t"
         ".L1:                  \n\t"
-        #endif // ARHAT_MODE == 3
+*/
+#endif // ARHAT_MODE == 3
         "    pop r30           \n\t"
         "    out __SREG__,r30  \n\t"
         "    pop r31           \n\t"
@@ -528,10 +483,11 @@ void pushAllRegs()
     "    push r27               \n\t"
     "    push r28               \n\t"
     "    push r29               \n\t"
-    "    ldd  r0,Z+2            \n\t"
-    "    ldd  r1,Z+3            \n\t"
+    "    ldd  r0,Z+3            \n\t"
+    "    ldd  r1,Z+4            \n\t"
     "    push r1                \n\t"
     "    push r0                \n\t"
+    "    clr  r1                \n\t"
     ::
     );
 }
@@ -576,7 +532,7 @@ asm volatile(
     "    pop r2           \n\t"
     "    in  r31,__SP_H__ \n\t"
     "    in  r30,__SP_L__ \n\t"
-    "    std Z+5,r0       \n\t"
+    "    std Z+7,r0       \n\t"
     "    std Z+6,r1       \n\t"
     "    pop r1           \n\t"
     "    pop r0           \n\t"
@@ -586,4 +542,73 @@ asm volatile(
     "    pop r31          \n\t"
     ::
     );
+}
+
+// ==================== for pcint.h functions ========================= //
+
+/**
+ * Пишет код ошибки или результата в статус замера и снимает событие таймаута
+ * Заодно запрещает перерывание (только для ноги этого замера, а не всего уровня!).
+ */
+void pcint_end(Pulse * ptrPulse, uint8_t error)
+{
+    uint8_t     rpin = ptrPulse->pin;
+
+    ptrPulse->state        = error;                             // статус завершения, какой задан.
+
+    switch( rpin & 0xc0 ){                                      // запрещаем прерывание от текущей ноги
+        case 0x80: PCMSK2 &= ~(((uint8_t)1)<<(rpin&0x3f)); break;
+        case 0x40: PCMSK1 &= ~(((uint8_t)1)<<(rpin&0x3f)); break;
+        case 0:    PCMSK0 &= ~(((uint8_t)1)<<(rpin&0x3f)); break;
+    }
+}
+
+/**
+ * Часть обработчика прерывания PCINT, измеряющая длительность импульса в микросекундах
+ * выключает обработчик прерывания и изменяет статус структуры - самостоятельно!
+ *
+ * @return ptrPulse(ptr)->res; -- state==PULSE_OK? pulse time in micros : not valid data.
+ */
+void pcint_micros( void *ptr, uint8_t oldBit )
+{
+    if( ptrPulse(ptr)->state == PULSE_BUSY )
+    {
+        // first measuring! store current micros()
+        ptrPulse(ptr)->res   = micros();
+        ptrPulse(ptr)->state = PULSE_SECOND;
+    } else {
+        // second measuring or mistake: calc pulse time anyone:
+        ptrPulse(ptr)->res = micros() - ptrPulse(ptr)->res;
+
+        pcint_end(
+            ptrPulse(ptr)
+            , (ptrPulse(ptr)->state == PULSE_SECOND? PULSE_OK : PULSE_ERROR)
+        );
+    }
+}
+
+/**
+ * Часть обработчика прерывания PCINT увеличивающая счетчик числа импульсов
+ * продолжает подсчет до истечения таймаута или по изменению статуса c PULSE_BUSY на любой другой.
+ * также выключает обработчик самостоятельно. Только по изменению статуса или таймауту.
+ *
+ * @param  uint8_t oldBit      -- предыдущее состояние ноги прерывания "было до"
+ * @return ptrPulse(ptr)->res; -- число накопленных импульсов
+ *
+ */
+void pcint_encoder( void *ptr, uint8_t oldBit )
+{
+    uint8_t addition;
+
+    switch( ptrPulse(ptr)->state )
+    {
+        case PULSE_RAISING: addition = 1-(int8_t)oldBit; break;         // прирост если был 0 и стало 1
+        case PULSE_FAILING: addition = oldBit;           break;         // только из 1 в 0
+        case PULSE_BOTH:    addition = 1;                break;         // пофиг как было
+        default:
+            // статус изменен извне: останов измерений без изменения статуса
+            pcint_end( ptrPulse(ptr), ptrPulse(ptr)->state);
+            return;
+    }
+    ptrPulse(ptr)->res += addition;
 }

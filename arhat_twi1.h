@@ -13,21 +13,11 @@
  * 2. Внешняя буферизация данных при необходимости. Размер памяти определяется вашей программой, а не тут;
  * 3. Возможность ведения статистики - управляется константами компиляции;
  * 4. Произвольная настройка скорости работы интерфейса от 490гц до 1Мгц с авто вычислением прескалера и регистра скорости
- * 5. Возможность уменьшенной комплиции, если не требуются все режимы сразу.
+ * 5. Возможность уменьшенной комплиции только режима Master, если Slave не нужен;
  *
- * Константы компиляции #define:
- * #define TWI_ON   1 // если не определено, то обработчик прерывания I2C останется, но практически ПУСТОЙ!
- * Перед включением этого файла надо определить TWI_ON значениями:
- *
- * #define TWI_ON 1  // Master-Transmitter only: компилировать как режим Мастера-передатчика    ,ISR(TWI)=190 байт
- * #define TWI_ON 2  // Master-Receiver only:    компилировать как режим Мастер-приемник        ,ISR(TWI)=224 байт
- * #define TWI_ON 4  // Slave-Receiver only:     компилировать как режим Ожидающий получатель   ,ISR(TWI)=202 байт
- * #define TWI_ON 8  // Slave-Transmitter only:  компилировать как режим Отправитель по запросу ,ISR(TWI)=188 байт
- *
- * @TODO: #define TWI_ON 16 // + Logging: Включить в компиляцию логирование работы интерфейса.
- *
- * !!! Допускается компиляция нескольких режимов одновременно:
- * #define TWI_ON (1+2+4+8) // Включить в компиляцию ВСЕ режимы. ,ISR(TWI)=424 байт.
+ * Константы компиляции #define и default_value:
+ * #define TWI_LOG_ON   1 // если не определено, то не компилировать с блоком подсчета статистики работы I2C
+ * #define TWI_SLAVE_ON 1 // если не определено, то не компилировать с режимом Slave Receive/Transmit
  *
  * @author Arhat109-20160402. arhat109@mail.ru
  * @license:
@@ -39,13 +29,7 @@
 #ifndef ARHAT_TWI_H
 #define ARHAT_TWI_H 1
 
-#include "arhat.h"
-
-// If not defined - use as Master Transmitter only!
-// Если нет ничего, то только управляющий мастер!
-#ifndef TWI_ON
-#  define TWI_ON TWI_MASTER_TX
-#endif // TWI_ON
+//#include "arhat.h"
 
 // ------------ All states TWI status register AND twiState: ------------- //
 // Misc
@@ -146,7 +130,7 @@
 #endif
 // ------------ TWI internal variables ------------- //
 
-enum TwiModes {
+enum TWI_Modes {
      TWI_IS_SLAVE  = 1                                  // have I slave mode too?
     ,TWI_SEND_STOP = 2                                  // is need send stop when Master is ending?
     ,TWI_READY     = 4                                  // previous work is ended
@@ -156,13 +140,13 @@ volatile uint8_t    twiMode;
 volatile uint8_t    twiState;                           // state TWI automat
 volatile uint8_t    twiSLARW;                           // address for send to (SLARW)
 
-volatile uint8_t   twiMT_Count;                         // остаток байт для передачи мастеров
+volatile uint16_t   twiMT_Count;                        // остаток байт для передачи мастеров
 volatile uint8_t  * twiMT_Ptr;                          // указатель текущего байта внешнего буфера передачи мастером
 
-volatile uint8_t   twiRX_Count;                         // остаток байт для приема мастером/слейвом
+volatile uint16_t   twiRX_Count;                        // остаток байт для приема мастером/слейвом
 volatile uint8_t  * twiRX_Ptr;                          // указатель текущего байта внешнего буфера приема мастером/слейвом
 
-volatile uint8_t   twiST_Count;                         // остаток байт для передачи слейвом
+volatile uint16_t   twiST_Count;                        // остаток байт для передачи слейвом
 volatile uint8_t  * twiST_Ptr;                          // указатель текущего байта внешнего буфера передачи слейвом
 
 volatile void    (* twiHookRestart)(void) = 0;          // указатель на функцию перезапуска мастера без освобождения шины (TWI_SEND_STOP)
@@ -170,15 +154,15 @@ volatile void    (* twiMasterReader)(void) = 0;         // указатель н
 volatile void    (* twiSlaveReader)(void) = 0;          // указатель на функцию "Slave принял данные, куда их?"
 volatile void    (* twiSlaveWriter)(void) = 0;          // указатель на функцию "Slave всё отправил, что дальше?"
 
-#if defined(TWI_ON) && (TWI_ON & TWI_LOG_ON)
+#ifdef TWI_LOG_ON
 
 typedef struct {
     uint16_t   starts,restarts,stops,losts,noslarw,mtx,mrx,srx,grx,stx;
-} TwiStat;
-#define ptrTwiStat(ptr)  ((TWI_Stat *)(ptr))
-static volatile TwiStat    twiStatistic;
+} TWI_Stat;
+#define ptrTWI_Stat(ptr)  ((TWI_Stat *)(ptr))
+static volatile TWI_Stat    twiStatistic;
 
-#endif // TWI_ON::TWI_LOG_ON
+#endif // TWI_LOG_ON
 
 // ------------ TWI functions ------------- //
 
@@ -216,78 +200,38 @@ void twiSetup(uint32_t freq, uint8_t mode)
 }
 
 /**
- * for ISR(TWI): control restart conditions in all modes:
- * ! if only 1 mode -- this is a MACRO with next RETURN into ISR, else - function !
- *
- * 1. Освобождать шину, или надо ещё (напр. прием после передачи)?
- * да: Сеанс завершен. Ждем прямо тут прохождения стопа! Выходим из обработчика тут!
- * нет, рестарт:
- * .. есть Хук? процедура подготовки след. посылки: указатели, размеры, адрес, режим..
- * .. а нет Хука! Типовой режим "чтение после записи"
- * в любом случае отправляем restart
- *
- */
-#if !((TWI_ON & 0xFF)==1) && !((TWI_ON & 0xFF)==2) && !((TWI_ON & 0xFF)==4) && !((TWI_ON & 0xFF)==8)
-void twiSendStop(uint8_t _md)
-{
-    if (_md & TWI_SEND_STOP)
-    {
-        TWCR = _BV(TWSTO)|twiReleaseBus(_md & TWI_IS_SLAVE);
-        while(TWCR & _BV(TWSTO));
-        twiMode |= TWI_READY;
-    }else{
-        if( twiHookRestart ){
-            twiHookRestart();
-        } else {
-            twiSLARW |= TWI_READ;
-        }
-        TWCR = twiStart(_md & TWI_IS_SLAVE);
-    }
-}
-#else
-#define twiSendStop(_md)                                   \
-{                                                          \
-    TWCR = _BV(TWSTO)|twiReleaseBus((_md) & TWI_IS_SLAVE); \
-    while(TWCR & _BV(TWSTO));                              \
-    twiMode |= TWI_READY;                                  \
-}
-#endif
-
-/**
  * ISR for TWI interface: realised master and slave modes
  * ------------------------------------------------------
  */
 ISR(TWI_vect)
 {
+    uint8_t _sl;                                        // Am I is Slave too? set TWEA or not
     uint8_t _cr;
     uint8_t _md = twiMode;
     uint8_t _st = twiState=TWI_STATUS;
 
-#if defined(TWI_ON) && ((TWI_ON & TWI_IS_SLAVE_TX)||(TWI_ON & TWI_IS_SLAVE_RX))
     if( _st >= TWI_SR_SLA_ACK )
     {
-#if (TWI_ON & TWI_IS_SLAVE_TX)
-        if( (_st == TWI_ST_DATA_NACK) || (_st == TWI_ST_LAST_DATA) )
+#ifdef TWI_SLAVE_ON
+        if( _st == TWI_ST_DATA_NACK || _st == TWI_ST_LAST_DATA )
         {
             // ST: Был последний байт, мастер наелся ..
             // ST: Был наш последний байт: предупреждали мастера twiReply(NACK)
             twiSlaveWriter();                                   // Хук - обязателен!
-            _md=twiMode;                                        // возможно изменение режимов в хуке!
-            twiSendStop(_md); return;
+            goto TWI_RET_HOOK;
         }else{
-            if( (_st == TWI_ST_ARB_LOST_SLA_ACK) || (_st == TWI_ST_SLA_ACK || _st == TWI_ST_DATA_ACK) )
+            if( _st == TWI_ST_ARB_LOST_SLA_ACK || _st == TWI_ST_SLA_ACK || _st == TWI_ST_DATA_ACK)
             {
                 // ST: Моего мастера заткнули и просят данные ..
                 // ST: Мой адрес, начинаем ..
                 // ST: Отправлено успешно, продолжаем ..
                 TWDR = *twiST_Ptr++;
-                _cr = twiReply(--twiST_Count);
+                _sl = --twiST_Count;
+                goto TWI_REPLY;
             }else{
-#endif // TWI_ON::TWI_IS_SLAVE_TX
-#if (TWI_ON & TWI_IS_SLAVE_RX)
-                if( (_st == TWI_SR_GCALL_DATA_NACK) || (_st == TWI_SR_DATA_NACK) || (_st == TWI_SR_STOP) )
+                if( _st == TWI_SR_GCALL_DATA_NACK || _st == TWI_SR_DATA_NACK || _st == TWI_SR_STOP )
                 {
-                    if( (_st == TWI_SR_GCALL_DATA_NACK) || (_st == TWI_SR_DATA_NACK) )
+                    if( _st == TWI_SR_GCALL_DATA_NACK || _st == TWI_SR_DATA_NACK )
                     {
                         // SR: УПС. GCall - туда же.
                         // SR: УПС. Получен байт, мастеру уже был отправлен NACK
@@ -295,10 +239,9 @@ ISR(TWI_vect)
                     }
                     // SR: Обнаружен stop или restart в процессе приема .. это всё?
                     twiSlaveReader();                           // Хук обязателен! это последний, дальше некуда складывать!
-                    _md=twiMode;                                // возможно изменение режимов в хуке!
-                    twiSendStop(_md); return;
+                    goto TWI_RET_HOOK;
                 }else{
-                    if( (_st == TWI_SR_GCALL_DATA_ACK) || (_st == TWI_SR_DATA_ACK) )
+                    if( _st == TWI_SR_GCALL_DATA_ACK || _st == TWI_SR_DATA_ACK )
                     {
                         // SR: пришел байт всем - аналогично
                         // SR: пришел байт, можно ещё принять
@@ -308,81 +251,83 @@ ISR(TWI_vect)
                     // TWI_SR_ARB_LOST_GCALL_ACK SR: Вызов всем потерял шину (как это?) --""--
                     // TWI_SR_SLA_ACK            SR: Адрес принят, ещё только ждем данные
                     // TWI_SR_GCALL_ACK          SR: Вызов всем принят оно же
-                    _cr = twiReply(--twiRX_Count);              // .. приняли байт и отправляем NACK если осталось 1 место.
+                    _sl = --twiRX_Count;                        // .. приняли байт и отправляем NACK если осталось 1 место.
+                    goto TWI_REPLY;
                 }
-#endif // TWI_ON::TWI_IS_SLAVE_RX
-#if (TWI_ON & TWI_IS_SLAVE_TX)
             }
         }
-#endif // TWI_ON::TWI_IS_SLAVE_TX
+#endif // TWI_SLAVE_ON
     }else{
-
-#endif // TWI_ON::TWI_SLAVE..
-#if defined(TWI_ON) && (TWI_ON & TWI_MASTER_TX)
         // Master Transmiter or Reciever modes
-        if( (_st == TWI_START) || (_st == TWI_REP_START) )
+        if( _st == TWI_START || _st == TWI_REP_START)
         {
             // MT,MR:: Прошла отправка стартовой посылки
             // MT,MR:: Прошла отправка повторного старта
             TWDR = twiSLARW;
-            _cr = twiReply(_md & TWI_IS_SLAVE);
+            goto TWI_REPLY;
+        }
+        if( _st == TWI_MT_SLA_ACK || _st == TWI_MT_DATA_ACK )
+        {
+            // MT: Адрес получателя отправлен успешно, начинаем
+            // MT: Байт данных отправлен, продолжаем
+            if( !(twiMT_Count--) ) goto TWI_SEND_STOP;
+
+            TWDR = *(twiMT_Ptr++);
+            _sl = _md & TWI_IS_SLAVE;
+TWI_REPLY:
+            if( !_sl ) goto TWI_REPLY0;
+TWI_REPLY1:
+            _cr = twiReply(0);
         }else{
-            if( (_st == TWI_MT_SLA_NACK) || (_st == TWI_MT_DATA_NACK) )
+            if( _st == TWI_MTR_ARB_LOST )
             {
-                // TWI_MT_DATA_NACK MT:: Упс. data NACK: Получатель не хотит?
-                // TWI_MT_SLA_NACK  MT:: Упс. Получатель NACK .. не откликается зараза.
-                twiSendStop(_md); return;
-            }
-            if( (_st == TWI_MT_SLA_ACK)  || (_st == TWI_MT_DATA_ACK) )
-            {
-                // MT: Адрес получателя отправлен успешно, начинаем
-                // MT: Байт данных отправлен, продолжаем
-                if( twiMT_Count-- ){
-                    TWDR = *twiMT_Ptr++;
-                    _cr = twiReply(_md & TWI_IS_SLAVE);
-                }else{
-                    twiSendStop(_md); return;
-                }
+                // MT,MR: Упс. Мастер потерял шину: освобождаем и ждем/слушаем.
+                _md |= TWI_READY;
+                _cr = twiReleaseBus(_sl);
             }else{
-#endif // TWI_ON::TWI_MASTER_TX
-#if defined(TWI_ON) && (TWI_ON & TWI_MASTER_RX)
-                if( _st == TWI_MTR_ARB_LOST )
+                if( _st == TWI_MR_DATA_ACK || _st == TWI_MR_SLA_ACK )
                 {
-                    // MT,MR: Упс. Мастер потерял шину: освобождаем и ждем/слушаем.
-                    _md |= TWI_READY;
-                    _cr = twiReleaseBus(_md & TWI_IS_SLAVE);
+                    if( _st == TWI_MR_DATA_ACK ){
+                        // MR: байт принят, ACK отправлен
+                        *twiRX_Ptr++ = TWDR;
+                    }
+                    // MR: Отправитель найден, начинаем прием
+                    if( --twiRX_Count ) goto TWI_REPLY1;        // .. Можно ещё принять? Или Отправителю - NACK
+TWI_REPLY0:
+                    _cr = twiReply(0);
                 }else{
-                    if( (_st == TWI_MR_DATA_ACK) || (_st == TWI_MR_SLA_ACK) )
+                    if( _st == TWI_MR_DATA_NACK )
                     {
-                        if( _st == TWI_MR_DATA_ACK ){
-                            // MR: байт принят, ACK отправлен
-                            *(twiRX_Ptr++) = TWDR;
-                        }
-                        // MR: Отправитель найден, начинаем прием
-                        _cr = twiReply( --twiRX_Count );        // .. Можно ещё принять? Или Отправителю - NACK
+                        // MR: Упс. Получен последний байт дальше принимать некуда.
+                        *twiRX_Ptr = TWDR;
+                        if( twiMasterReader ) twiMasterReader();
+TWI_RET_HOOK:
+                        _sl = ((_md=twiMode) & TWI_IS_SLAVE);   // возможно изменение режимов в хуке!
+                    }
+                    if( _st == TWI_ERROR ) return;
+
+                    // All other Master states: stop/restart if need
+                    // TWI_MR_SLA_NACK  MR:: Упс. Отправитель NACK .. не откликается зараза.
+                    // TWI_MT_SLA_NACK  MT:: Упс. Получатель NACK .. не откликается зараза.
+                    // TWI_MT_DATA_NACK MT:: Упс. data NACK: Получатель не хотит?
+TWI_SEND_STOP:
+                    if (_md & TWI_SEND_STOP)                    // Освобождать шину, или надо ещё (напр. прием после передачи)?
+                    {
+                        TWCR = _BV(TWSTO)|twiReleaseBus(_sl);   // Сеанс завершен.
+                        while(TWCR & _BV(TWSTO));               // Ждем прямо тут прохождения стопа!
+                        _md |= TWI_READY;
                     }else{
-                        if( _st == TWI_ERROR ) return;
-                        if( _st == TWI_MR_DATA_NACK )
-                        {
-                            // MR: Упс. Получен последний байт дальше принимать некуда.
-                            *twiRX_Ptr = TWDR;
-                            if( twiMasterReader ) twiMasterReader();
-//                            goto TWI_RET_HOOK;
-                            _md=twiMode;                        // возможно изменение режимов в хуке!
+                        if( twiHookRestart ){
+                            twiHookRestart();                   // процедура подготовки след. посылки: указатели, размеры, адрес, режим..
+                        } else {
+                            twiSLARW |= TWI_READ;               // а нет Хука! Типовой режим "чтение после записи"
                         }
-                        // All other Master states: stop/restart if need
-                        // TWI_MR_SLA_NACK  MR:: Упс. Отправитель NACK .. не откликается зараза.
-                        twiSendStop(_md); return;
+                        _cr = twiStart(_sl);                    // в любом случае отправляем restart
                     }
                 }
-#endif // TWI_ON::TWI_MASTER_RX
-#if defined(TWI_ON) && (TWI_ON&TWI_MASTER_TX)
             }
         }
-#endif // TWI_ON::TWI_MASTER_TX
-#if defined(TWI_ON) && ((TWI_ON & TWI_IS_SLAVE_TX)||(TWI_ON & TWI_IS_SLAVE_RX))
     }
-#endif // TWI_SLAVE_ON
     twiMode = _md;
     TWCR = _cr;
 } //end ISR()

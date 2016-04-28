@@ -102,64 +102,6 @@ void tsc_micro_step ( TSC_Control *_tsc );      // шаг цикла КА в м�
 void empty(void *_tsc);                         // пропуск действия
 
 // ================================================================================================================= //
-// Определения и реализация конечных автоматов для замера длительностей или подсчета срабатываний прерываний PCINTх  //
-// ================================================================================================================= //
-#define PULSE_BUSY      1               // состояние измерителя "занят, идет замер"
-#define PULSE_SECOND    2               // измеритель "занят, вычисление длительности"
-#define PULSE_OK        3               // "замер произведен, данные верны"
-#define PULSE_RAISING   10              // "энкодер по фронту сигнала"
-#define PULSE_FAILING   11              // "энкодер по спаду сигнала"
-#define PULSE_BOTH      12              // "считаем и фронт и спад"
-#define PULSE_TIMER     32              // "ошибка по таймауту" нет сигнала или дальность больше предельной
-#define PULSE_ERROR     33              // "прочие ошибки измерений"
-
-// private definition! Not use in your skecthes:
-#define _pcint_DDR(n)           PCINT##n##_DDR
-#define _pcint_PORT(n)          PCINT##n##_PORT
-#define _pcint_PIN(n)           PCINT##n##_PIN
-#define _pcint_msk(n)           PCMSK##n
-#define _pcint_name(n)          PCINT##n##_vect
-
-#define _pcint_tonumber(n,p)    PCINT##n##_pin2number(p)
-
-#define _pcint_numbers(n)       pcint##n##numbers
-#define _pcint_old(n)           pcint##n##old
-#define _pcint_pulses(n)        pulses##n
-
-// public block for PCINT registers and this global variables:
-#define PCINT_DDR(n)            _pcint_DDR(n)
-#define PCINT_PORT(n)           _pcint_PORT(n)
-#define PCINT_PIN(n)            _pcint_PIN(n)
-#define PCINT_MSK(n)            _pcint_msk(n)
-#define PCINT_NAME(n)           _pcint_name(n)
-
-#define PCINT_pin2number(n,p)   _pcint_tonumber(n,p)
-
-#define PCINT_numbers(n)        _pcint_numbers(n)
-#define PCINT_old(n)            _pcint_old(n)
-#define PCINT_pulses(n)         _pcint_pulses(n)
-
-// как считать импульсы от энкодеров? фронтом, спадом или оба изменения
-enum EdgeType {PCINT_FAILING=0, PCINT_RAISING=1, PCINT_BOTH=2};
-
-typedef void (*PcintMethod)( void *ptrPulse, uint8_t );         // функции-обработчики прерывания "способ обработки".
-
-typedef struct {
-  TSC_Simple    ctrl;                   // time-state-control for timeouts
-  uint32_t      res;                    // valid or not valid data from method:
-  PcintMethod   method;                 // interrupt function for DO: pcint_xxx()
-  uint8_t       state;                  // @see PULSE_STATES constants status for this measuring.
-  uint8_t       pin;                    // local interrupt pin:[0..7] for this measuring and PCINT level in 6,7 bit
-} Pulse;
-
-#define ptrPulse(ptr)           ((Pulse *)(ptr))        // converter to Pulse*
-
-void pcint_end(Pulse * ptrPulse, uint8_t error);        // завершает обработку замера, запрещает прерывание от ноги
-void pcint_timeout(void *ptrPulse);                     // местная функция для КА "не дождался"
-void pcint_micros( void *ptr, uint8_t oldBit );         // способ замера: "замер длительности импукльса от фронта до спада"
-void pcint_encoder( void *ptr, uint8_t oldBit );        //    ещё способ: "подсчет количества фронтов/спадов/.. до таймаута"
-
-// ================================================================================================================= //
 // Определения и реализация конечных автоматов для аналоговой оцифровки сигналов через прерывания от ADC             //
 // ================================================================================================================= //
 #ifdef MAX_ADC

@@ -3,8 +3,10 @@
  * по фронту/спаду на пинах прерывания PCINT 0..2.
  *
  * Подключаются, только если до вызова #include "pcint.h" определено количество пинов прерывания: MAX_PULSES
- * и определен используемый уровень прерываний 0,1,2 - реализация TEMPLATE на С, иначе в скетчи будут вставляться
- * процедуры обработки прерываний - принудительно.
+ * и определен используемый уровень прерываний 0,1,2 - реализация TEMPLATE на С, чтобы исключить принудительную
+ * вставку в скетчи обработчиков прерываний.
+ *
+ * Допускается повторное включение файла для обработки нескольких уровней прерываний PCINT в одном скетче.
  *
  * Доступные прерывания в Ардуино Мега 2560:
  * PC_INT0[0..7] отключает SPI:SS(53),SPI:SCK(52),SPI:MOSI(51),SPI:MISO(50),pwm10(T2outA),pwm11(T1outA),pwm12(T1outB),
@@ -14,36 +16,34 @@
  * .. остальные ножки прерываний контроллера ATmega2560 в Ардуино - отсутствуют.
  *
  * Реализован "интерфейс" из ООП: методы обработки прерываний могут разрабатываться и расширяться без
- * существенных изменений кода. Есть 2 метода:
+ * существенных изменений кода. Пока есть 2 метода:
  *   pcint_micros()  -- измеряет длительность импульса или до таймаута
  *   pcint_encoder() -- подсчитывает прерывания по фронту/спаду/оба до таймаута или до запрета извне
  *
  * @example Примеры подключения:
  * 1. Подключение 1 узв. датчика для замеров расстояний (длительности импульса) на прерывание PCINT2:
  * #define PCINT       2
- * #define MAX_PULSES2 1
+ * #define MAX_PULSES  1
  * include "pcint.h"
  *
  * 2. Подключение 4 энкодеров для подсчета импульсов на прерывание PCINT0:
  * #define PCINT       0
- * #define MAX_PULSES0 4
+ * #define MAX_PULSES  4
  * #include "pcint.h"
  *
  * 3. Одновременное использование прерываний в скетче уровня 0 (8шт) и 1(2шт) (подключаем дважды! и имеем 2 обработчика в скетче):
+ * #define MAX_PULSES  10 // 8+2 -- всего 10 структур обработчиков!
  * #define PCINT       0
- * #define MAX_PULSES0 8
  * #include "pcint.h"
- *
  * #define PCINT       1
- * #define MAX_PULSES1 2
  * #include "pcint.h"
  *
  * Примечания:
  * 1. Номер уровня прерывания PCINT - только константа #define! изменяет результирующий код обработчиков и функций
  * 2. Уровень прерываний 1 для Ардуино Мега 2560 - не реализован: их всего 3 из 8 и они из разных регистров.
- * 3. Файл tsc.h подключается автоматически
- * 4. При подключении файла #include "hcsr04.h" этот файл подключается автоматически, но все предопределения должны
+ * 3. При подключении файла #include "hcsr04.h" этот файл подключается автоматически, но все предопределения должны
  *    выполняться также в скетче ПЕРЕД включением.
+ * 4. Файл arhat.h тут подключается автоматически, и если режим компиляции может быть указан точно также "до" включения этого файла.
  *
  * @author Arhat109-20151125. arhat109@mail.ru
  * @license:
@@ -58,82 +58,64 @@
  */
 #if defined(PCINT) && ( (PCINT==0 && !defined(PCINT_0))||(PCINT==1 && !defined(PCINT_1))||(PCINT==2 && !defined(PCINT_2)) )
 
-#if PCINT==0
-
-#if !defined(MAX_PULSES0)
-#error *** pcint.h::ERROR! not defined how much pins will be used for pcint level 0
+#if !defined(MAX_PULSES)
+#error *** pcint.h::ERROR! not defined how much pins will be used for pcints data
 #endif
+
+#if PCINT==0
 #define PCINT_0 1
 
 #elif PCINT==1
-
-#if !defined(MAX_PULSES1)
-#error *** pcint.h::ERROR! not defined how much pins will be used for pcint level 1
-#endif
 #define PCINT_1 1
 
 #elif PCINT==2
-
-#if !defined(MAX_PULSES2)
-#error *** pcint.h::ERROR! not defined how much pins will be used for pcint level 2
-#endif
 #define PCINT_2 1
-
 #endif
 
-#include "tsc.h"                        // требуется для обработки таймаутов
+// Защелка для исключения повторных переопределений
+#ifndef PCINT_H
 
-#if PCINT==0
+#include "arhat.h"
 
-uint8_t          pcint0old = 0;         // состояние пинов прерываний "предыдущее"
-uint8_t          pcint0numbers[8];      // текущие номера КА из pulses[], измеряющие на пинах 62..69 = 8шт!
-Pulse            pulses0[MAX_PULSES0];  // данные КА измерения длительностей и таймаутов
-
-uint8_t  pcint0_init(uint8_t pulseID, uint8_t pin, uint8_t state, PcintMethod method, TSC_Time timeout);
-void     pcint0_start(uint8_t intNumber);
-TSC_Time pulseIn0(uint8_t pulseId, void (*action)(void));
-
-#elif PCINT==1
-
-uint8_t          pcint1old = 0;         // состояние пинов прерываний "предыдущее"
-uint8_t          pcint1numbers[8];      // текущие номера КА из pulses[], измеряющие на пинах 62..69 = 8шт!
-Pulse            pulses1[MAX_PULSES1];  // данные КА измерения длительностей и таймаутов
-
-uint8_t  pcint1_init(uint8_t pulseID, uint8_t pin, uint8_t state, PcintMethod method, TSC_Time timeout);
-void     pcint1_start(uint8_t intNumber);
-TSC_Time pulseIn1(uint8_t pulseId, void (*action)(void));
-
-#elif PCINT==2
-
-uint8_t          pcint2old = 0;         // состояние пинов прерываний "предыдущее"
-uint8_t          pcint2numbers[8];      // текущие номера КА из pulses[], измеряющие на пинах 62..69 = 8шт!
-Pulse            pulses2[MAX_PULSES2];  // данные КА измерения длительностей и таймаутов
-
-uint8_t  pcint2_init(uint8_t pulseID, uint8_t pin, uint8_t state, PcintMethod method, TSC_Time timeout);
-void     pcint2_start(uint8_t intNumber);
-TSC_Time pulseIn2(uint8_t pulseId, void (*action)(void));
-
-#endif // PCINT
+Pulse            pulses[MAX_PULSES];    // One array for all measures! Один список для всех обработчиков измерений!
 
 // template генерация названий функций для текущего уровня прерываний PCINT:
 #define __pcint_init(p)         uint8_t pcint##p##_init ( \
-  uint8_t pulseID, uint8_t pin, uint8_t state,            \
-  PcintMethod method, TSC_Time timeout                    \
+uint8_t pulseID, uint8_t pin, uint8_t state,            \
+PcintMethod method, uint16_t timeout                    \
 )
 #define _pcint_init(p)          __pcint_init(p)
 
 #define __pcint_start(p)        void pcint##p##_start (uint8_t intNumber)
 #define _pcint_start(pcint)     __pcint_start(pcint)
 
-#define __pulsein(p)            TSC_Time pulseIn##p (uint8_t pulseId, void (*action)(void))
+#define __pulsein(p)            uint16_t pulseIn##p (uint8_t pulseId, void (*action)(void))
 #define _pulsein(p)             __pulsein(p)
+
+#endif // PCINT_H
+#if PCINT==0
+
+uint8_t          pcint0old = 0;         // состояние пинов прерываний "предыдущее"
+uint8_t          pcint0numbers[8];      // текущие номера КА из pulses[], измеряющие на пинах 62..69 = 8шт!
+
+#elif PCINT==1
+
+uint8_t          pcint1old = 0;         // состояние пинов прерываний "предыдущее"
+uint8_t          pcint1numbers[8];      // текущие номера КА из pulses[], измеряющие на пинах 62..69 = 8шт!
+
+#elif PCINT==2
+
+uint8_t          pcint2old = 0;         // состояние пинов прерываний "предыдущее"
+uint8_t          pcint2numbers[8];      // текущие номера КА из pulses[], измеряющие на пинах 62..69 = 8шт!
+
+#endif // PCINT
 
 /**
  * Замена типовой pulseIn(). В отличии от типовой - замеряет длительность сигнала по прерыванию.
  * Структура pulsesX[p] должна быть настроена на обработку ЗАРАНЕЕ.
  * Позволяет исполнять функцию без параметров, пока идет замер.
  *
- * template: TSC_Time pulseIn{0,1,2}(uint8_t pulseId, void (*action)(void))
+ * template: uint16_t pulseIn{0,1,2}(uint8_t pulseId, void (*action)(void))
  * calls:
  *   pulseIn0(pulseId, callback);       // for PCINT0 level
  *   pulseIn1(pulseId, callback);
@@ -142,36 +124,42 @@ TSC_Time pulseIn2(uint8_t pulseId, void (*action)(void));
 _pulsein(PCINT)
 {
 #if PCINT==0
-    pcint0_start(pulses0[pulseId].pin & 0x3f);
+    pcint0_start(pulses[pulseId].pin & 0x3f);
 #elif PCINT==1
-    pcint1_start(pulses1[pulseId].pin & 0x3f);
+    pcint1_start(pulses[pulseId].pin & 0x3f);
 #elif PCINT==2
-    pcint2_start(pulses2[pulseId].pin & 0x3f);
+    pcint2_start(pulses[pulseId].pin & 0x3f);
 #endif
+    uint16_t startTime = (uint16_t)getOvfCount();
     while(
-           (PCINT_pulses(PCINT)[pulseId].state == PULSE_BUSY)
-        || (PCINT_pulses(PCINT)[pulseId].state == PULSE_SECOND)
-        || !(tsc_getTime() - PCINT_pulses(PCINT)[pulseId].ctrl.started_at > PCINT_pulses(PCINT)[pulseId].ctrl.timeout)
+           (pulses[pulseId].state == PULSE_BUSY)
+        || (pulses[pulseId].state == PULSE_SECOND)
     ){
-        action();
+        if( !((uint16_t)getOvfCount() - startTime > pulses[pulseId].timeout) ){
+          action();
+        }else{
+          pulses[pulseId].state = PULSE_TIMER;
+        }
     }
-    return (PCINT_pulses(PCINT)[pulseId].state == PULSE_OK? PCINT_pulses(PCINT)[pulseId].res : 0);
+    return (pulses[pulseId].state == PULSE_OK? pulses[pulseId].res : 0);
 }
 
 /**
  * Настройка структуры замера на работу что и как измерять динамически. До вызова pcintX_start()!
  * Предпочтительнее статическая настройка в setup():
  *
- * @example для PCINT2, номер в структурах замера 1:
- * pulses2[1] = {{0, 28, pcint_timeout}, 0, pcint_micros, PULSE_BUSY, Analog8};
+ * @example Статическая настройка структуры pulses2[1]: для PCINT2, номер в структурах замера 1:
+ *
+ * pulses2[1] = {0, pcint_micros, 28, 0, PULSE_BUSY, ((2<<6)|8) };
+ *
  * , что означает, данные КА:
- * {"0 мсек - начни сразу как сможешь", ждать <28*1024мксек, функция_таймаута}, res=0, "замер длительности", "занят", "на 8 аналоговом входе"
+ * {res=0, "замер длительности", ждать < 28*1024мксек, 0, "занят", "PCINT2, на 8 аналоговом входе"
  *
  * @return uint8_t pcint_number -- номер вектора прерываний в уровне [0..7]
  *
  * template: uint8_t pcint{0|1|2}_init(
  *     uint8_t pulseID, uint8_t pin, uint8_t state,
- *     PcintMethod method, TSC_Time timeout
+ *     PcintMethod method, uint16_t timeout
  * )
  * calls:
  *   pcint0_init(pulseID, pin, state, method, timeout);
@@ -180,13 +168,13 @@ _pulsein(PCINT)
  */
 _pcint_init(PCINT)
 {
-  uint8_t intNumber = PCINT_pin2number(PCINT, pin);              // макрос от уровня PCINT! ищем номер прерывания по общему номеру пина
+  uint8_t intNumber = PCINT_pin2number(PCINT, pin);     // макрос от уровня PCINT! ищем номер прерывания по общему номеру пина
 
-  PCINT_numbers(PCINT)[intNumber] = pulseID;                     // сохраняем номер активной структуры
-  PCINT_pulses(PCINT)[pulseID].state = state;                    // закрываем доступ "идет замер"
-  PCINT_pulses(PCINT)[pulseID].pin = (PCINT<<6) | intNumber;     // пригодится для записи ошибки по таймауту
-  PCINT_pulses(PCINT)[pulseID].method = method;                  // метод обработки - подсчет длительности импульса
-  tsc_simple( &(PCINT_pulses(PCINT)[pulseID].ctrl), pcint_timeout, timeout);    // включаем таймаут для этого замера
+  PCINT_numbers(PCINT)[intNumber] = pulseID;            // сохраняем номер активной структуры
+  pulses[pulseID].state = state;                        // закрываем доступ "идет замер"
+  pulses[pulseID].pin = (PCINT<<6) | intNumber;         // пригодится для записи ошибки по таймауту
+  pulses[pulseID].method = method;                      // метод обработки - подсчет длительности импульса/количества прерываний/..
+  pulses[pulseID].timeout = timeout;                    // включаем таймаут для этого замера
 
   return intNumber;
 }
@@ -204,24 +192,47 @@ _pcint_init(PCINT)
  * or call:
  *   pcintX_start( pcintX_init(...));
  *
- * К моменту вызова структура замеров должна быть настроена на конкретную работу
+ * К моменту вызова структура замеров должна быть настроена на конкретную работу через pcintX_init()
  * @see pcintX_init();
  */
 _pcint_start(PCINT)
 {
   uint8_t       mask;
 
-  mask = (1<<intNumber);                                         // получаем маску для битовых операций {0}1{0}
+  mask = (1<<intNumber);                                // получаем маску для битовых операций {0}1{0}
+  PCINT_DDR(PCINT)  |= mask;                            // ?надо Pullup? нога "на выход" {0}1{0}
+  PCINT_PORT(PCINT) |= mask;                            // ?надо Pullup? сброс ножки прерывания в 1 ("echo")
 
-  PCINT_DDR(PCINT)  |= mask;                                     // ?надо Pullup? нога "на выход" {0}1{0}
-  PCINT_PORT(PCINT) |= mask;                                     // ?надо Pullup? сброс ножки прерывания в 1 ("echo")
-  mask = ~mask;                                                  // инвертируем маску для битовых операций {1}0{1}
-  PCINT_old(PCINT) &= mask;                                      // бит в "было раньше" = 0
-  PCINT_DDR(PCINT) &= mask;                                      // нога "на вход"
+  mask = ~mask;                                         // инвертируем маску для битовых операций {1}0{1}
+  PCINT_old(PCINT) &= mask;                             // бит в "было раньше" = 0
+  PCINT_DDR(PCINT) &= mask;                             // нога "на вход"
+  PCINT_MSK(PCINT) |= ~mask;                            // и только теперь разрешаем прерывание с этой ноги
 
-  PCINT_MSK(PCINT) |= ~mask;                                     // и только теперь разрешаем прерывание с этой ноги
-  PCICR  |= (1<<PCINT);                                          // и разрешаем вектор PCINT0..2
+  pulses[pulseID].start = getOvfCount();                // фиксируем время старта
+
+  PCICR  |= (1<<PCINT);                                 // и разрешаем вектор PCINT0..2
 }
+
+#ifndef PCINT_H
+/**
+ * One dispatcher for all pcint-workers for control pcint_timeout
+ * Единый обработчик таймаутов для всех элементов структуры pulses
+ * Если требуется проверка таймаут, проверяем и изменяем статус этой структуры
+ *
+ * for loop() as everyMillis()
+ */
+void pcint_timeout()
+{
+    Pulse   *ptr  = &pulses[MAX_PULSES-1];
+    uint16_t time = (uint16_t)getOvfCount();
+
+    do{
+        if( ptr->timeout && (time - ptr->start > ptr->timeout) )
+            pcint_end( ptr, PULSE_TIMER);
+        ptr--;
+    }while(ptr != pulses);
+}
+#endif // PCINT_H
 
 /**
  * Обработчик прерывания для прерываний PCINT0..2
@@ -239,22 +250,28 @@ _pcint_start(PCINT)
  */
 ISR( PCINT_NAME(PCINT) )
 {
-  uint8_t       reg  = PCINT_PIN(PCINT);                        // Первым делом читаем ноги регистра К (Analog8..15)
-  uint8_t       temp = PCINT_old(PCINT);                        // и предыдущее их состояние
+  uint8_t       reg  = PCINT_PIN(PCINT);                // Первым делом читаем ноги регистра К (Analog8..15)
+  uint8_t       temp = PCINT_old(PCINT);                // и предыдущее их состояние
   uint8_t     * ptrNumbers = PCINT_numbers(PCINT);
 
-  PCINT_old(PCINT) = reg;                                       // сразу сохраняем новое состояние
-  reg = (temp ^ reg) & PCINT_MSK(PCINT);                        // ищем разрешенные И сработавшие ножки (нормально 1шт)
+  PCINT_old(PCINT) = reg;                               // сразу сохраняем новое состояние
+  reg = (temp ^ reg) & PCINT_MSK(PCINT);                // ищем разрешенные И сработавшие ножки (нормально 1шт)
   do{
-    if( reg & 0x01 )                                            // Если прерывание от этого бита
+    if( reg & 0x01 )                                    // Если прерывание от этого бита
     {
-      Pulse * ptrPulse = PCINT_pulses(PCINT)+(*ptrNumbers);     // получаем адрес структуры замера
-      ptrPulse->method(ptrPulse, temp & 0x01);                  // исполняем собственно обработчик
+      Pulse * ptrPulse = pulses+(*ptrNumbers);          // получаем адрес структуры замера
+      ptrPulse->method(ptrPulse, temp & 0x01);          // исполняем собственно обработчик
     }
-    ptrNumbers++;                                               // следующий номер прерывания
-    reg = reg >> 1;                                             // готовим следующую проверку "кто сработал"
-    temp = temp >> 1;                                           // готовим его пред. состояние (raising|failing)
+    ptrNumbers++;                                       // следующий номер прерывания
+    reg = reg >> 1;                                     // готовим следующую проверку "кто сработал"
+    temp = temp >> 1;                                   // готовим его пред. состояние (raising|failing)
   }while(reg);
 }
+
+// And only this wa are defining blocking semaphore
+// И только теперь определяем блокирующую защелку
+#ifndef PCINT_H
+#define PCINT_H 1
+#endif
 
 #endif // PCINT blocking for twice parsing
