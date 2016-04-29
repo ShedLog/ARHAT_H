@@ -37,7 +37,7 @@
 
 volatile uint32_t       timer0_overflow_count   = 0UL;  // timer overflow counter. Счетчик переполнений таймера 0 "тиков" по 1024мксек.
 void        (* volatile timer0_hook)(void)      = 0;    // hook function pointer. функция "хук", вызываемая из обработчика, если надо.
-uint8_t                 timer0_hook_run         = 0;    // hook is running. Blocking twice calling. защелка, запрещающая повторный вызов.
+uint8_t                 timer0_hook_run         = 1;    // hook is running. Blocking twice calling. защелка, запрещающая повторный вызов.
 
 /**
  * Volatile read count TOV interrupt
@@ -225,8 +225,8 @@ void time_init()
  *
  * equal this:
  *
- * void __vector_ 23(void) __attribute__ ((signal, used, externally_visible)) __attribute__((naked));
- * void __vector_ 23(void)
+ * void __vector_23(void) __attribute__ ((signal, used, externally_visible)) __attribute__((naked));
+ * void __vector_23(void)
  */
 ISR(timerISR(TIME_DEFAULT, TIME_ISR), ISR_NAKED)
 //ISR(timerISR(TIME_DEFAULT, TIME_ISR))
@@ -245,10 +245,10 @@ ISR(timerISR(TIME_DEFAULT, TIME_ISR), ISR_NAKED)
 }
 */
     asm volatile(
-        "    push r30               \n\t"
-        "    push r31               \n\t"
-        "    in r30,__SREG__        \n\t"
-        "    push r30               \n\t"
+        "    push r30          \n\t"
+        "    push r31          \n\t"
+        "    in r30,__SREG__   \n\t"
+        "    push r30          \n\t"
 
         "    lds r30,timer0_overflow_count   \n\t"
         "    lds r31,timer0_overflow_count+1 \n\t"
@@ -264,52 +264,61 @@ ISR(timerISR(TIME_DEFAULT, TIME_ISR), ISR_NAKED)
         "    sts timer0_overflow_count+3,r30 \n\t"
 
 #if defined(ARHAT_MODE) && (ARHAT_MODE == 3)
-/*
-        "    lds r30,timer0_hook                 ; if( timer0_hook && !timer0_hook_run ){\n\t"
-        "    lds r31,timer0_hook+1                                                       \n\t"
-        "    or  r30,r31                         ; (LByte | HByte) == 0?                 \n\t"
-        "    breq .L1                                                                    \n\t"
-        "    lds r30,timer0_hook_run                                                     \n\t"
-        "    tst r30                             ; r30 & r30 != 0?                       \n\t"
-        "    brne .L1                                                                    \n\t"
-        "    inc r30                             ; timer0_hook_run = 1; \n\t"
-        "    sts timer0_hook_run,r30                                    \n\t"
-        "    lds r30,timer0_hook                 ; timer0_hook();       \n\t"
-        "    lds r31,timer0_hook+1                                      \n\t"
-        "    sei   \n\t"
-*/
-        ::
-    );
 
-    if( timer0_hook && !timer0_hook_run ){
-        timer0_hook_run = 1;
-//        pushAllRegs();
-        sei();
-        timer0_hook();
-        cli();
-        timer0_hook_run = 0;
-/*
-    asm volatile(
-        "    eicall \n\t"
-//        "    cli    \n\t"
-        ::
-    );
-*/
-//        popAllRegs();
-    }
-    asm volatile(
-/*
-        "    cli   \n\t"
-        "    clr r31                                                    \n\t"
-        "    sts timer0_hook_run,r31             ; timer0_hook_run = 0; \n\t"
-        ".L1:                  \n\t"
-*/
+        "    lds r30,timer0_hook_run                          \n\t"
+        "    tst r30                 ; timer0_hook_run != 0?  \n\t"
+        "    brne .END_PROC                                   \n\t"
+        "    lds r30,timer0_hook     ; Z=timer_hook           \n\t"
+        "    lds r31,timer0_hook+1                            \n\t"
+        "    or  r30,r31             ; timer0_hook == 0?      \n\t"
+        "    breq .END_PROC                                   \n\t"
+        "    sts timer0_hook_run,r30 ; r30 не нуль!           \n\t"
+
+        "    in   r30,__RAMPZ__ \n\t"
+        "    push r30           \n\t"
+        "    push r0            \n\t"
+        "    push r1            \n\t"
+        "    push r18           \n\t"
+        "    push r19           \n\t"
+        "    push r20           \n\t"
+        "    push r21           \n\t"
+        "    push r22           \n\t"
+        "    push r23           \n\t"
+        "    push r24           \n\t"
+        "    push r25           \n\t"
+        "    push r26           \n\t"
+        "    push r27           \n\t"
+
+        "    lds r30,timer0_hook     ; восстанавливаем адрес \n\t"
+        "    sei                \n\t"
+        "    eicall             \n\t"
+        "    cli                \n\t"
+        "    clr r31            \n\t"
+        "    sts timer0_hook_run,r31 ; timer0_hook_run = 0; \n\t"
+
+        "    pop  r27           \n\t"
+        "    pop  r26           \n\t"
+        "    pop  r25           \n\t"
+        "    pop  r24           \n\t"
+        "    pop  r23           \n\t"
+        "    pop  r22           \n\t"
+        "    pop  r21           \n\t"
+        "    pop  r20           \n\t"
+        "    pop  r19           \n\t"
+        "    pop  r18           \n\t"
+        "    pop  r1            \n\t"
+        "    pop  r0            \n\t"
+        "    pop  r30           \n\t"
+        "    out  __RAMPZ__,r30 \n\t"
+
+        ".END_PROC:             \n\t"
+
 #endif // ARHAT_MODE == 3
-        "    pop r30           \n\t"
-        "    out __SREG__,r30  \n\t"
-        "    pop r31           \n\t"
-        "    pop r30           \n\t"
-        "    reti              \n\t"
+        "    pop  r30           \n\t"
+        "    out  __SREG__,r30  \n\t"
+        "    pop  r31           \n\t"
+        "    pop  r30           \n\t"
+        "    reti               \n\t"
         ::
     );
 
