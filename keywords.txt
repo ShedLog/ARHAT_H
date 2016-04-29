@@ -60,7 +60,7 @@ D_Read	KEYWORD2
 
 pinModeOut	KEYWORD2
 pinModeIn	KEYWORD2
-pinModePullIn	KEYWORD2
+pinModePullup	KEYWORD2
 pinMode	KEYWORD2
 
 pinOutHigh	KEYWORD2
@@ -102,7 +102,7 @@ timerCapture	KEYWORD2
 timerSetServo	KEYWORD2
 timerIMask	KEYWORD2
 timerIFlag	KEYWORD2
-ISRtimer	KEYWORD2
+timerISR	KEYWORD2
 prescalerMode	KEYWORD2
 
 pwmGetTimer	KEYWORD2
@@ -122,7 +122,7 @@ admux2Channel	KEYWORD2
 admux2Gain	KEYWORD2
 analogRead	KEYWORD2
 analogWrite	KEYWORD2
-adc_read	KEYWORD2
+adcRead	KEYWORD2
 
 EEPROM_read	KEYWORD2
 EEPROM_write	KEYWORD2
