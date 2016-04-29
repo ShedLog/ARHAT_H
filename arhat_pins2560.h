@@ -134,7 +134,11 @@
 #define pwm10	10
 #define pwm11	11
 #define pwm12	12
-#define pwm13	13	// using as timer 0 channel A only! You must to use psevdoname T1C for timer 1 channel C on pin 13!
+// using as timer 0 channel A only! You must to use psevdoname T1C for timer 1 channel C on pin 13!
+#define pwm13	13
+#define pwm14   44
+#define pwm15   45
+#define pwm16   46
 
 #define Analog0		54
 #define Analog1		55
@@ -154,7 +158,7 @@
 #define Analog15	69
 
 // input pin for: "GND-pin" analog read
-// p:[0..15]
+// pin:[0..15]
 #define admux1Channel(src,pin,adlar)  \
 {                                     \
   ADMUX = (src)|((pin)&7)|(adlar);    \

@@ -16,9 +16,11 @@
  *  а) Определять ARHAT_MODE - необязательно. Если его нет, по умолчанию будет режим 2
  *  б) В режиме "2" все номера пинов нельзя брать из переменных! Только константные значения. Иначе будет ошибка компиляции скетча.
  *  в) В режиме "2" не определена функция pulseIn()! Вместо неё есть замер длительностей по прерываниям PCINT2 для Mega2560 в tsc.h
- *  г) В режиме "3" обработчик таймера минимален. Хук вызова процедур НЕ включен в компиляцию.
- *  д) дополнительно к "2" компилируется хук вызова процедур без параметров из под обработчика таймера. Вызов с открытыми прерываниями
- *     без остановки самого таймера. Повторный вызов хука блокирован "защелкой", что позволяет вызывать из под таймера "долгие" функции.
+ *  г) В режиме "2" обработчик таймера минимален. Хук вызова процедур НЕ включен в компиляцию.
+ *
+ *  д) файл arhat.c, d режиме "3" дополнительно компилируется с хуком вызова процедур без параметров из под обработчика таймера.
+ *     Вызов производится с открытыми прерываниями, без остановки самого таймера. Повторный вызов хука блокирован "защелкой",
+ *     что позволяет вызывать из под таймера "долгие" функции.
  *
  * Примеры подключения:
  * 1. Режим 2 по умолчанию: первая строка скетча:
@@ -45,7 +47,7 @@
  * Бесплатно. Но автор принимает пожертвования на тел. +7-951-388-2793.
  *
  * Thanks:
- *  More parts was taked from this authors:
+ *  More parts was took from this authors:
  *  Благодарности авторам, работы которых были активно использованы тут:
  *
  * authors Arduino.h, avr/io.h and other distribs files.
@@ -58,7 +60,7 @@
  */
 
 #ifndef _ARHAT_H_
-#define _ARHAT_H_
+#define _ARHAT_H_   1
 
 // Schema all default includes for this file. For simple search if need
 // Схема всех подключаемых хидеров. Для справки, дабы проще искать
@@ -169,7 +171,7 @@
 #if defined(__AVR_ATmega2560__) || defined(__AVR_ATmega1280__) || defined(__AVR_ATmega640__)
 // special macros for each pin Arduino Mega board
 #  include "arhat_pins2560.h"
-#elif defined(__AVR_ATmega88P__) || defined(__AVR_ATmega88P__) || defined(__AVR_ATmega168P__) || defined(__AVR_ATmega328P__)
+#elif defined(__AVR_ATmega48P__) || defined(__AVR_ATmega88P__) || defined(__AVR_ATmega168P__) || defined(__AVR_ATmega328P__)
 // special macros for UNO at Atmega328p and may be some else board at this CPU
 #  include "arhat_pins328p.h"
 #else
@@ -227,7 +229,7 @@ extern "C" {
 #define pinRead(p)      (D_Read(p))
 
 // Setup(): Set pin to input with pullup resistor. Пин на ввод с подтяжкой к +5В:
-#define pinModePullIn(p) (pinModeOut(p), pinOutHigh(p), pinModeIn(p))
+#define pinModePullup(p) (pinModeOut(p), pinOutHigh(p), pinModeIn(p))
 
 /* =========== Timer and PWM works. Работа с таймерами и ШИМ 1 командой ============= */
 
@@ -263,7 +265,7 @@ extern "C" {
 
 // make interrupt vector name t:[0,2[,1,3,4,5]] v:[OVF,COMPA,COMPB[,COMPC,CAPT]].
 // Это если забылось как оно пишется в interrupt.h
-#define ISRtimer(t,v)           _ISRtimer(t,v)
+#define timerISR(t,v)           _ISRtimer(t,v)
 
 // return mode for prescaler by devider 64 --> 3. Удобства для. Перевод коэффициента делителя в код режима прескалера:
 #define prescalerMode(pr)       _prescalerMode(pr)
@@ -372,8 +374,8 @@ admux2Gain(src,neg,poz,g,adlar)                              \
   }                                   \
 }
 
+// Analog for previous, but faster and smaller
 // Его аналог. Дешевле и шустрее, но "тики" по 1024мксек!
-// интервалы желательно пересчитывать в тики вручную на калькуляторе, округлять и подставлять куда надо
 #define everyOVF(interval, action)     \
 {                                      \
   static unsigned long t = 0UL;        \
@@ -414,16 +416,25 @@ admux2Gain(src,neg,poz,g,adlar)                              \
 //                                     Definitions for PCINT interrupt workers                                       //
 // Определения и реализация конечных автоматов для замера длительностей или подсчета срабатываний прерываний PCINTх  //
 // ================================================================================================================= //
-#define PULSE_BUSY      1               // состояние измерителя "занят, идет замер"
-#define PULSE_SECOND    2               // измеритель "занят, вычисление длительности"
-#define PULSE_OK        3               // "замер произведен, данные верны"
-#define PULSE_RAISING   10              // "энкодер по фронту сигнала"
-#define PULSE_FAILING   11              // "энкодер по спаду сигнала"
-#define PULSE_BOTH      12              // "считаем и фронт и спад"
-#define PULSE_TIMER     32              // "ошибка по таймауту" нет сигнала или дальность больше предельной
-#define PULSE_ERROR     33              // "прочие ошибки измерений"
+// interrupt is busy. состояние измерителя "занят, идет замер"
+#define PULSE_BUSY      1
+// interrupt is busy, part 2. измеритель "занят, вычисление длительности"
+#define PULSE_SECOND    2
+// Interrupt worked Ok, pulse[].res is real. "замер произведен, данные верны"
+#define PULSE_OK        3
+// Interrupt with encoder. Add for rasing. "энкодер по фронту сигнала"
+#define PULSE_RAISING   10
+// Interrupt with encoder. Add for failing. "энкодер по спаду сигнала"
+#define PULSE_FAILING   11
+// Interrupt with encoder. Add both: rasing AND failing. "считаем и фронт и спад"
+#define PULSE_BOTH      12
+// Interrupt worked. Timeout reached. "ошибка по таймауту" нет сигнала или дальность больше предельной
+#define PULSE_TIMER     32
+// Interrupt worked with error. "прочие ошибки измерений"
+#define PULSE_ERROR     33
 
 // public block for PCINT registers and this global variables:
+// n -- is group PCINT [0,1,2]
 #define PCINT_DDR(n)            _pcint_DDR(n)
 #define PCINT_PORT(n)           _pcint_PORT(n)
 #define PCINT_PIN(n)            _pcint_PIN(n)
@@ -435,10 +446,7 @@ admux2Gain(src,neg,poz,g,adlar)                              \
 #define PCINT_numbers(n)        _pcint_numbers(n)
 #define PCINT_old(n)            _pcint_old(n)
 
-// как считать импульсы от энкодеров? фронтом, спадом или оба изменения
-enum EdgeType {PCINT_FAILING=0, PCINT_RAISING=1, PCINT_BOTH=2};
-
-typedef void (*PcintMethod)( void *ptrPulse, uint8_t );         // функции-обработчики прерывания "способ обработки".
+typedef void (*PcintMethod)( void *ptrPulse, uint8_t ); // функции-обработчики прерывания "способ обработки".
 
 typedef struct {
   uint32_t      res;                    // valid or not valid data from method: результат измерения сложен сюда
@@ -509,7 +517,7 @@ uint32_t      getOvfCount(void);                // cli() .. {sei()} getter.
 typedef void (*TimerHookProc)(void);
 TimerHookProc setTimerHook(TimerHookProc);      // atomic set timer0_hook and return old value
 
-uint16_t      adc_read(uint8_t);                // ADC read analog pin with waiting to ready. Not by interrupt! for interrupt reading @see tsc.h
+uint16_t      adcRead(uint8_t);                // ADC read analog pin with waiting to ready. Not by interrupt! for interrupt reading @see tsc.h
 
 unsigned char EEPROM_read(unsigned int uiAddress);               // read 1 byte from EEPROM
 void EEPROM_write(unsigned int uiAddress, unsigned char ucData); // write 1 byte to EEPROM
@@ -547,7 +555,7 @@ extern "C" {
 #define Arduino_h       1
 
 // redefining all typical wiring functions and so on into this macros:
-#define pinMode(p,m)            ((m)==OUTPUT? pinModeOut(p) : ((m)==INPUT? pinModeIn(p) : (pinModePullIn(p))))
+#define pinMode(p,m)            ((m)==OUTPUT? pinModeOut(p) : ((m)==INPUT? pinModeIn(p) : (pinModePullup(p))))
 #define digitalRead(p)          (pinRead(p))
 #define digitalWrite(p,v)       ((v)? pinOutHigh(p) : pinOutLow(p))
 #define turnOffPWM(t)           (pwmOff(p))
@@ -562,7 +570,7 @@ extern "C" {
 #define portInputRegister(P)    ( (volatile uint8_t *)(&pinInReg(P)  )
 #define portModeRegister(P)     ( (volatile uint8_t *)(&pinDirReg(P) )
 
-extern void                       (* timer0_hook)(void);        // callback function called from ISR Timer 0 with sei().
+extern void              (* volatile timer0_hook)(void);        // callback function called from ISR Timer 0 with sei().
 
 #define millis()                     time_millis()
 #define micros()                     time_micros()

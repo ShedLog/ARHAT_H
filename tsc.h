@@ -14,8 +14,8 @@
  * @author Arhat109 at 2015-07-18
  * @see Arhat.lib::examples/TSC_Blink/TSC_Blink.ino
  */
-#ifndef _TSC_
-#define _TSC_ 1
+#ifndef _TSC_H_
+#define _TSC_H_ 1
 
 #include "arhat.h"
 
@@ -23,7 +23,7 @@
 extern "C" {
 #endif
 
-#define tsc_getTime()   ((TSC_Time)getOvfCount())
+#define tscGetTime()   ((TSC_Time)getOvfCount())
 //#define tsc_getTime()   ((TSC_Time)millis())
 
 typedef uint16_t TSC_Time;              // переопределение интервалов до 65535 мсек
@@ -65,7 +65,7 @@ void tsc_simple( TSC_Simple *_tsc, TSC_Command command, TSC_Time timeout);
 //        в таблице: бинарные автоматы, автоматы с троичной логикой и т.д.
 // @TODO: отсюда же можно отнаследовать автоматы "с памятью" и "стеком исполнения"...
 
-typedef uint16_t TSC_Step_Count;                // размерность нумерации состояний: 16 бит.
+typedef uint16_t TSC_Step_Count;                // размерность нумерации состояний: 16 бит. (FLASH организована по 16бит!)
 //typedef uint8_t TSC_Step_Count;                 // размерность нумерации состояний: 8 бит.
 
 /**
@@ -77,11 +77,11 @@ typedef uint16_t TSC_Step_Count;                // размерность нум
  *
  * Если таблица не задана - ничего не выполняет (отключение автомата)
  * Если в таблице нет команды - производит задержку до следующего выполнения, ничего не вызывает
- * Время команды входит в интервал ожидания следующей.
+ * Время исполнения текущей команды входит в интервал ожидания следующей.
  */
 typedef struct PROGMEM {
   TSC_Command           command;                // команда (метод) для исполнения действий состояния
-  TSC_Time              timeout;                // временной интервал следующего состояния (мсек)
+  TSC_Time              timeout;                // временной интервал до(!) следующего состояния (мсек)
   TSC_Step_Count        next;                   // номер следующей команды в таблице состояний КА
 } TSC_Step;
 
@@ -90,10 +90,10 @@ typedef struct {
   TSC_Time                 started_at;          // момент начала текущего интервала ожидания
   TSC_Time                 timeout;             // интервал до запуска команды по индексу state
   TSC_Step_Count           state;               // номер состояния КА, ожидающий исполнения
-  const PROGMEM TSC_Step * table;               // таблица состояний и переходов этого КА
+  const TSC_Step * PROGMEM table;               // таблица состояний и переходов этого КА
 } TSC_Control;
 
-void tsc_init( TSC_Control *_tsc, const PROGMEM TSC_Step * _table, TSC_Step_Count _state );
+void tsc_init( TSC_Control *_tsc, const TSC_Step * PROGMEM _table, TSC_Step_Count _state );
 void tsc_next( TSC_Control *_tsc, TSC_Step_Count _state );
 void tsc_step( TSC_Control *_tsc );
 void tsc_micro_next( TSC_Control *_tsc, TSC_Step_Count _state );
@@ -147,4 +147,4 @@ ISR(ADC_vect)
 }
 #endif
 
-#endif // _TSC_
+#endif // _TSC_H_

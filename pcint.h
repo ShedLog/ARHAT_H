@@ -73,7 +73,7 @@
 #endif
 
 // Защелка для исключения повторных переопределений
-#ifndef PCINT_H
+#ifndef _PCINT_H_
 
 #include "arhat.h"
 
@@ -92,7 +92,7 @@ PcintMethod method, uint16_t timeout                    \
 #define __pulsein(p)            uint16_t pulseIn##p (uint8_t pulseId, void (*action)(void))
 #define _pulsein(p)             __pulsein(p)
 
-#endif // PCINT_H
+#endif // _PCINT_H_
 #if PCINT==0
 
 uint8_t          pcint0old = 0;         // состояние пинов прерываний "предыдущее"
@@ -213,7 +213,7 @@ _pcint_start(PCINT)
   PCICR  |= (1<<PCINT);                                 // и разрешаем вектор PCINT0..2
 }
 
-#ifndef PCINT_H
+#ifndef _PCINT_H_
 /**
  * One dispatcher for all pcint-workers for control pcint_timeout
  * Единый обработчик таймаутов для всех элементов структуры pulses
@@ -232,7 +232,7 @@ void pcint_timeout()
         ptr--;
     }while(ptr != pulses);
 }
-#endif // PCINT_H
+#endif // _PCINT_H_
 
 /**
  * Обработчик прерывания для прерываний PCINT0..2
@@ -270,8 +270,8 @@ ISR( PCINT_NAME(PCINT) )
 
 // And only this wa are defining blocking semaphore
 // И только теперь определяем блокирующую защелку
-#ifndef PCINT_H
-#define PCINT_H 1
+#ifndef _PCINT_H_
+#define _PCINT_H_     1
 #endif
 
 #endif // PCINT blocking for twice parsing

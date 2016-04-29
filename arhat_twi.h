@@ -36,8 +36,8 @@
  *   Это свободное ПО для любого использования без каких-либо гарантий и претензий.
  *   Требуется сохранять тег @author при любых изменениях. Можете дописать свой.
  */
-#ifndef ARHAT_TWI_H
-#define ARHAT_TWI_H 1
+#ifndef _ARHAT_TWI_H_
+#define _ARHAT_TWI_H_ 1
 
 #include "arhat.h"
 
@@ -170,6 +170,7 @@ volatile void    (* twiMasterReader)(void) = 0;         // указатель н
 volatile void    (* twiSlaveReader)(void) = 0;          // указатель на функцию "Slave принял данные, куда их?"
 volatile void    (* twiSlaveWriter)(void) = 0;          // указатель на функцию "Slave всё отправил, что дальше?"
 
+/*
 #if defined(TWI_ON) && (TWI_ON & TWI_LOG_ON)
 
 typedef struct {
@@ -179,7 +180,7 @@ typedef struct {
 static volatile TwiStat    twiStatistic;
 
 #endif // TWI_ON::TWI_LOG_ON
-
+*/
 // ------------ TWI functions ------------- //
 
 /**
@@ -227,7 +228,7 @@ void twiSetup(uint32_t freq, uint8_t mode)
  * в любом случае отправляем restart
  *
  */
-#if !((TWI_ON & 0xFF)==1) && !((TWI_ON & 0xFF)==2) && !((TWI_ON & 0xFF)==4) && !((TWI_ON & 0xFF)==8)
+#if ((TWI_ON & 0x0F)!=1) && ((TWI_ON & 0x0F)!=2) && ((TWI_ON & 0x0F)!=4) && ((TWI_ON & 0x0F)!=8)
 void twiSendStop(uint8_t _md)
 {
     if (_md & TWI_SEND_STOP)
@@ -259,7 +260,7 @@ void twiSendStop(uint8_t _md)
  */
 ISR(TWI_vect)
 {
-    uint8_t _cr;
+    uint8_t _cr = twiReply(0);
     uint8_t _md = twiMode;
     uint8_t _st = twiState=TWI_STATUS;
 
@@ -271,7 +272,7 @@ ISR(TWI_vect)
         {
             // ST: Был последний байт, мастер наелся ..
             // ST: Был наш последний байт: предупреждали мастера twiReply(NACK)
-            twiSlaveWriter();                                   // Хук - обязателен!
+            twiSlaveWriter();                                   // Хук - обязателен! Дальше нечего передавать..
             _md=twiMode;                                        // возможно изменение режимов в хуке!
             twiSendStop(_md); return;
         }else{
@@ -456,13 +457,26 @@ void twiRAW(uint8_t address                             // адрес устро
     _twiRX_Buffer(data, dlength);
 
     twiHookRestart = 0;                                 // типовой переход на чтение этого же Slave
-    twiMode &= ~TWI_SEND_STOP;                          // рестарт после отправки команды
+    twiMode |= TWI_SEND_STOP;                           // рестарт после отправки команды
     twiSLARW = (address<<1 | TWI_WRITE);                // Сначала режим передачи!
     TWCR = twiStart(twiMode & TWI_IS_SLAVE);
 }
+
+/**
+ * @example: Пример реализации обработчика "SLAVE отправил всё, что дальше?"
+ * для случая, когда текущий буфер можно отправлять повторно по следующему запросу
+ *
+ * !!! Использует доп. глобалы (должны быть определены в вашем скетче):
+ *  uint8_t * stBuffer;
+ *  uint8_t   stBufferSize;
+ */
+ void twiSlaveRewriter(void)
+ {
+     _twiST_Buffer(stBuffer, stBufferSize);             // просто перенастраиваем буфер на повторную передачу.
+ }
 
 #ifdef __cplusplus
     }
 #endif
 
-#endif // ARHAT_TWI_H
+#endif // _ARHAT_TWI_H_

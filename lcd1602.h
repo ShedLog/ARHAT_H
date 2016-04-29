@@ -28,7 +28,7 @@
 #ifndef _LCD1602_H_
 
 #ifndef _ARHAT_TWI_H_
-  #define TWI_ON 1         // only Master-Transmit mode! Not use other mode in this!
+  #define TWI_ON           TWI_MASTER_TX         // only Master-Transmit mode! Not use other mode in this!
   #include "arhat_twi.h"
 #endif // _ARHAT_TWI_H_
 
