@@ -6,7 +6,6 @@
  * Чтобы правильно указать интервал в тиках надо время в миллисекундах умножить на 0.976
  * лучше на калькуляторе, чем в программе.
  */
-#include "arhat.h"
 #include "tsc.h"
 
 // .. Методы, исполняемые при изменении состояния КА:
@@ -17,9 +16,9 @@ void tsc_run( TSC_Simple *_tsc )
 {
   if(
       _tsc->command
-      && (tsc_getTime() - _tsc->started_at > _tsc->timeout)
+      && (tscGetTime() - _tsc->started_at > _tsc->timeout)
   ){
-    _tsc->started_at = tsc_getTime();
+    _tsc->started_at = tscGetTime();
     // команда: длительность исполнения команды ВХОДИТ в интервал!
     (*_tsc->command)(_tsc);
   }
@@ -33,7 +32,7 @@ void tsc_simple( TSC_Simple *_tsc, TSC_Command command, TSC_Time timeout)
 {
   _tsc->command = command;
   _tsc->timeout = timeout;
-  _tsc->started_at = (TSC_Time)tsc_getTime();
+  _tsc->started_at = (TSC_Time)tscGetTime();
 }
 
 /**
@@ -49,12 +48,12 @@ void tsc_next( TSC_Control *_tsc, TSC_Step_Count _state )
   _tsc->timeout    = (TSC_Time)pgm_read_word_near( &(current->timeout) );
 
   _tsc->state      = _state;                            // устанавливаем следующее состояние
-  _tsc->started_at = (TSC_Time)tsc_getTime();           // и его стартовое время
+  _tsc->started_at = (TSC_Time)tscGetTime();           // и его стартовое время
 
 }
 
 // setup() метод сохранения текущих данных для конечного автомата:
-void tsc_init( TSC_Control *_tsc, const PROGMEM TSC_Step * _table, TSC_Step_Count _state )
+void tsc_init( TSC_Control *_tsc, const TSC_Step * PROGMEM _table, TSC_Step_Count _state )
 {
     _tsc->table = _table;                               // сохраняем таблицу переходов для этого КА
     tsc_next(_tsc, _state);                             // устанавливаем заданное состояние
@@ -68,7 +67,7 @@ void tsc_step( TSC_Control *_tsc )
   // если задана таблица (нет - выключен!)
   if( _tsc->table ){
     // если событие, переключающее КА - наступило:
-    if( (TSC_Time)tsc_getTime() - _tsc->started_at >= _tsc->timeout )
+    if( (TSC_Time)tscGetTime() - _tsc->started_at >= _tsc->timeout )
     {
       // определяем место хранения структуры состояния КА
       const TSC_Step * current PROGMEM = _tsc->table + _tsc->state;

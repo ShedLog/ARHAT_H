@@ -19,8 +19,7 @@
  * This is free software, not any pay. But you may donate some money to phone +7-951-388-2793
  */
 
-#define ARHAT_C 1           // need for includes interrupt function in this file only.
-#define ARHAT_MODE 3        // need in this file!
+#define ARHAT_MODE 2        // need in this file!
 #include "arhat.h"
 
 // defaults timer0 timers functions and interrupts such in wiring
@@ -37,7 +36,7 @@
 #endif
 
 volatile uint32_t       timer0_overflow_count   = 0UL;  // timer overflow counter. Счетчик переполнений таймера 0 "тиков" по 1024мксек.
-volatile void        (* timer0_hook)(void)      = 0;    // hook function pointer. функция "хук", вызываемая из обработчика, если надо.
+void        (* volatile timer0_hook)(void)      = 0;    // hook function pointer. функция "хук", вызываемая из обработчика, если надо.
 uint8_t                 timer0_hook_run         = 0;    // hook is running. Blocking twice calling. защелка, запрещающая повторный вызов.
 
 /**
@@ -222,15 +221,15 @@ void time_init()
  * "С" verison   = 158 bytes;
  * "ASM" version = 102 bytes, 46/51/75 cycles: 2.875mcsec for timer0_hook=0 and 4.6875 mcsec for empty call
  *
- * ISR(ISRtimer(TIME_DEFAULT, TIME_ISR), ISR_NAKED)
+ * ISR(timerISR(TIME_DEFAULT, TIME_ISR), ISR_NAKED)
  *
  * equal this:
  *
  * void __vector_ 23(void) __attribute__ ((signal, used, externally_visible)) __attribute__((naked));
  * void __vector_ 23(void)
  */
-ISR(ISRtimer(TIME_DEFAULT, TIME_ISR), ISR_NAKED)
-//ISR(ISRtimer(TIME_DEFAULT, TIME_ISR))
+ISR(timerISR(TIME_DEFAULT, TIME_ISR), ISR_NAKED)
+//ISR(timerISR(TIME_DEFAULT, TIME_ISR))
 {
 /* C version:
 
@@ -388,7 +387,7 @@ ISR(ISRtimer(TIME_DEFAULT, TIME_ISR), ISR_NAKED)
  *
  * 3. !!! before use it must be adcOn() with delay=108micros !!!
  */
-uint16_t adc_read(uint8_t anPin)
+uint16_t adcRead(uint8_t anPin)
 {
 //  uint8_t    oreg, anh;
 
