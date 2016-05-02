@@ -504,6 +504,7 @@ uint16_t pulseIn2(uint8_t pulseId, void (*action)(void));
 
 // @see in this below or wiring.c by ARHAT_MODE:
 extern volatile uint32_t timer0_overflow_count;
+extern uint8_t           timer0_hook_run;       // !0: hook is running. Blocking twice calling. защелка, запрещающая повторный вызов.
 
 // @see arhat.c
 

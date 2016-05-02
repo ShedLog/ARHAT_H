@@ -27,6 +27,8 @@
  * моргает 13 пином по 2 секунды вкл и выкл. Примерно в середине каждой фазы функция перехватчик моргает
  * "инверсно" по 2 раза длительностью по 0.2 сек.
  *
+ * !!! Добавлен вывод на LCD1602 или аналогичный дисплей подключаемый на шину I2C (TWI). !!!
+ *
  * @author Arhat109 arhat109@mail.ru, +7-(951)-388-2793
  *
  * Лицензия:
@@ -39,10 +41,19 @@
  * "на свое усмотрение" (напр. кинуть денег на телефон "сколько не жалко")
  */
 
-#define _ARHAT_ 1
-#include "arhat.h"
+//#define _ARHAT_ 1
+//#include "arhat.h"
+#include "lcd1602.h"
 
 #define testPin     13
+
+// quickly blinks 3 times for next test and pause 0.5 sec.
+void testBlink3()
+{
+    testOvfCount(150,150);      // blink1
+    testOvfCount(150,150);      // blink2
+    testOvfCount(150,500);      // blink3 and pause after
+}
 
 //
 // test working time interrupt and its overflow count only:
@@ -60,14 +71,6 @@ void testOvfCount( uint16_t onTicks, uint16_t offTicks )
     while( getOvfCount() - curCount < offTicks );
 }
 
-// quickly blinks 3 times for next test and pause 0.5 sec.
-void testBlink3()
-{
-    testOvfCount(150,150);      // blink1
-    testOvfCount(150,150);      // blink2
-    testOvfCount(150,500);      // blink3 and pause after
-}
-
 //
 // test working microseconds getter
 //
@@ -83,18 +86,33 @@ void testMicros(unsigned long ticks)
     while( micros() - curMicros < ticks );
 }
 
-uint8_t pinLedState = 0;  // we can't read 13 pin!
-uint8_t hookCount = 0;
+volatile uint8_t pinLedState = 0;  // we can't read 13 pin!
+volatile uint8_t hookCount = 0;
+
+void lcdWrite16(uint8_t x, uint8_t y, uint16_t data)
+{
+    char outBuf[8];
+
+    lcdSetCursor(x,y);
+    utoa(data, outBuf, 10);
+    lcdWrite(outBuf, strlen(outBuf));
+}
 
 //
 // test delay() waiting in milliseconds
 //
 void testDelay( uint16_t waitON, uint16_t waitOFF)
 {
+    lcdSetCursor(0,0);
+    lcdWrite("Main ", 5);
+
     digitalWrite(testPin, HIGH);
     pinLedState = 1;
     hookCount = 0;
     delay(waitON);
+
+    lcdSetCursor(0,0);
+    lcdWrite("     ", 5);
 
     digitalWrite(testPin, LOW);
     pinLedState = 0;
@@ -107,9 +125,12 @@ void testDelay( uint16_t waitON, uint16_t waitOFF)
 //
 void hookGo()
 {
+    //  lcdWrite("H", 1);
     if( hookCount < 4 ) {
-        if(hookCount == 0 ){ delay(1000); }
-        else               { delay(200); }
+        //    Serial.write("S",1);
+        lcdWrite16(0, 1, SP);
+        if(hookCount == 0 ){ lcdWrite(" 1sec. ", 7); delay(1000); }
+        else               { lcdWrite(" 200m. ", 7); delay(200);  }
         hookCount++;
         if( pinLedState == 0 ){ digitalWrite(testPin, HIGH); }
         else                  { digitalWrite(testPin, LOW);  }
@@ -120,31 +141,42 @@ void hookGo()
 
 void setup() {
     pinMode(testPin, OUTPUT);
+    lcdSetup(0x27, 16, 2, 1);
+    lcdWrite("Hello, Arhat!", 13);
 }
 
 void loop() {
 
     uint8_t    i;
+    uint32_t   time;
 
     testBlink3();
 
     // 1. test interrupt only: 10 times about 0.9994 sec. ON/OFF
+    lcdSetCursor(0,1);
+    lcdWrite(" :test1: ", 9);
     for(i=10; i>0; i--)  testOvfCount(976, 976);
     testBlink3();
 
     // 2. test micros(): 10 times each 0.5 seconds ON/OFF
+    lcdSetCursor(0,1);
+    lcdWrite(" :test2: ", 9);
     for(i=10; i>0; i--)  testMicros(500000);
     testBlink3();
 
     // 3. test delay16(): 10 times each 1 sec ON and 0.5 sec OFF
+    lcdSetCursor(0,1);
+    lcdWrite(" :test3: ", 9);
     for(i=10; i>0; i--)  testDelay(1000, 500);
     testBlink3();
 
     // 4. test timer hook: 10 tines, each 2sec ON and 2sec OFF and 2 times 0.2sec ON/OFF with hook at middle
     setTimerHook(hookGo);
+    timer0_hook_run = 0;
     for(i=10; i>0; i--){
         testDelay(2000, 2000);
     }
+    timer0_hook_run = 1;
     setTimerHook(0);
     testBlink3();
 }

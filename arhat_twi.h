@@ -469,12 +469,12 @@ void twiRAW(uint8_t address                             // адрес устро
  * !!! Использует доп. глобалы (должны быть определены в вашем скетче):
  *  uint8_t * stBuffer;
  *  uint8_t   stBufferSize;
- */
+ *//*
  void twiSlaveRewriter(void)
  {
      _twiST_Buffer(stBuffer, stBufferSize);             // просто перенастраиваем буфер на повторную передачу.
  }
-
+*/
 #ifdef __cplusplus
     }
 #endif
