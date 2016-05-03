@@ -19,7 +19,7 @@
  * This is free software, not any pay. But you may donate some money to phone +7-951-388-2793
  */
 
-#define ARHAT_MODE 2        // need in this file!
+#define ARHAT_MODE 3        // need in this file!
 #include "arhat.h"
 
 // defaults timer0 timers functions and interrupts such in wiring
@@ -273,9 +273,10 @@ ISR(timerISR(TIME_DEFAULT, TIME_ISR), ISR_NAKED)
         "    or  r30,r31             ; timer0_hook == 0?      \n\t"
         "    breq .END_PROC                                   \n\t"
         "    sts timer0_hook_run,r30 ; r30 не нуль!           \n\t"
-
+#if defined(RAMPZ)
         "    in   r30,__RAMPZ__ \n\t"
         "    push r30           \n\t"
+#endif
         "    push r0            \n\t"
         "    push r1            \n\t"
         "    push r18           \n\t"
@@ -291,7 +292,11 @@ ISR(timerISR(TIME_DEFAULT, TIME_ISR), ISR_NAKED)
 
         "    lds r30,timer0_hook     ; восстанавливаем адрес \n\t"
         "    sei                \n\t"
+#if defined(RAMPZ)
         "    eicall             \n\t"
+#else
+        "    icall              \n\t"
+#endif
         "    cli                \n\t"
         "    clr r31            \n\t"
         "    sts timer0_hook_run,r31 ; timer0_hook_run = 0; \n\t"
@@ -308,9 +313,10 @@ ISR(timerISR(TIME_DEFAULT, TIME_ISR), ISR_NAKED)
         "    pop  r18           \n\t"
         "    pop  r1            \n\t"
         "    pop  r0            \n\t"
+#if defined(RAMPZ)
         "    pop  r30           \n\t"
         "    out  __RAMPZ__,r30 \n\t"
-
+#endif
         ".END_PROC:             \n\t"
 
 #endif // ARHAT_MODE == 3
@@ -455,47 +461,61 @@ void EEPROM_write(unsigned int uiAddress, unsigned char ucData)
 void pushAllRegs()
 {
   asm volatile(
-    "    push r31               \n\t"
-    "    push r30               \n\t"
-    "    in   r31,__SP_H__      \n\t"
-    "    in   r30,__SP_L__      \n\t"
-    "    push r0                \n\t"
-    "    in   r0,__SREG__       \n\t"
-    "    push r0                \n\t"
-    "    push r1                \n\t"
-    "    push r2                \n\t"
-    "    push r3                \n\t"
-    "    push r4                \n\t"
-    "    push r5                \n\t"
-    "    push r6                \n\t"
-    "    push r7                \n\t"
-    "    push r8                \n\t"
-    "    push r9                \n\t"
-    "    push r10               \n\t"
-    "    push r11               \n\t"
-    "    push r12               \n\t"
-    "    push r13               \n\t"
-    "    push r14               \n\t"
-    "    push r15               \n\t"
-    "    push r16               \n\t"
-    "    push r17               \n\t"
-    "    push r18               \n\t"
-    "    push r19               \n\t"
-    "    push r20               \n\t"
-    "    push r21               \n\t"
-    "    push r22               \n\t"
-    "    push r23               \n\t"
-    "    push r24               \n\t"
-    "    push r25               \n\t"
-    "    push r26               \n\t"
-    "    push r27               \n\t"
-    "    push r28               \n\t"
-    "    push r29               \n\t"
-    "    ldd  r0,Z+3            \n\t"
-    "    ldd  r1,Z+4            \n\t"
-    "    push r1                \n\t"
-    "    push r0                \n\t"
-    "    clr  r1                \n\t"
+    "    push r31          \n\t"
+    "    push r30          \n\t"
+    "    push r0           \n\t"
+    "    in   r0,__SREG__  \n\t"
+
+    "    cli               \n\t"
+    "    in   r31,__SP_H__ \n\t"
+    "    in   r30,__SP_L__ \n\t"
+    "    out  __SREG__,r0  \n\t"
+    "    push r0           \n\t"
+#if defined(RAMPZ)
+    "    in   r0,__RAMPZ__ \n\t"
+    "    push r0           \n\t"
+#endif
+    "    push r1           \n\t"
+    "    push r2           \n\t"
+    "    push r3           \n\t"
+    "    push r4           \n\t"
+    "    push r5           \n\t"
+    "    push r6           \n\t"
+    "    push r7           \n\t"
+    "    push r8           \n\t"
+    "    push r9           \n\t"
+    "    push r10          \n\t"
+    "    push r11          \n\t"
+    "    push r12          \n\t"
+    "    push r13          \n\t"
+    "    push r14          \n\t"
+    "    push r15          \n\t"
+    "    push r16          \n\t"
+    "    push r17          \n\t"
+    "    push r18          \n\t"
+    "    push r19          \n\t"
+    "    push r20          \n\t"
+    "    push r21          \n\t"
+    "    push r22          \n\t"
+    "    push r23          \n\t"
+    "    push r24          \n\t"
+    "    push r25          \n\t"
+    "    push r26          \n\t"
+    "    push r27          \n\t"
+    "    push r28          \n\t"
+    "    push r29          \n\t"
+
+    "    ldd  r0,Z+5       \n\t"
+    "    push r0           \n\t"
+    "    ldd  r0,Z+4       \n\t"
+    "    push r0           \n\t"
+    "    ldd  r0,Z+3       \n\t"
+    "    push r0           \n\t"
+    "    ldd  r0,Z+2       \n\t"
+    "    push r0           \n\t"
+    "    ldd  r0,Z+1       \n\t"
+    "    pop  r30          \n\t"
+    "    pop  r31          \n\t"
     ::
     );
 }
@@ -537,12 +557,24 @@ asm volatile(
     "    pop r5           \n\t"
     "    pop r4           \n\t"
     "    pop r3           \n\t"
-    "    pop r2           \n\t"
+
+    "    in  r2,__SREG__  \n\t"
+    "    cli              \n\t"
     "    in  r31,__SP_H__ \n\t"
     "    in  r30,__SP_L__ \n\t"
-    "    std Z+7,r0       \n\t"
-    "    std Z+6,r1       \n\t"
+    "    out __SREG__,r2  \n\t"
+    "    pop r2           \n\t"
+#if defined(RAMPZ)
+    "    std Z+9,r0       \n\t"
+    "    std Z+8,r1       \n\t"
     "    pop r1           \n\t"
+    "    pop r0           \n\t"
+    "    out __RAMPZ__,r0 \n\t"
+#else  // !RAMPZ
+    "    std Z+8,r0       \n\t"
+    "    std Z+7,r1       \n\t"
+    "    pop r1           \n\t"
+#endif // RAMPZ
     "    pop r0           \n\t"
     "    out __SREG__,r0  \n\t"
     "    pop r0           \n\t"
