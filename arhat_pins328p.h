@@ -21,7 +21,7 @@
 
 #define _ARHAT_PINS328P_   1
 
-#define ARDUINO_MEGA_PINS           17
+#define ARDUINO_MEGA_PINS           14
 #define NUM_DIGITAL_PINS            ARDUINO_MEGA_PINS
 #define MAX_ANALOG_INPUTS           6
 #define START_ANALOG_PIN_NUMBER     ARDUINO_MEGA_PINS
@@ -47,23 +47,25 @@
 #define pin11	11	// PB 3 ** chip17 + PWM11 + MOSI + OC2A + PCINT3 **
 #define pin12	12	// PB 4 ** chip18 + MISO + PCINT4 **
 #define pin13	13	// PB 5 ** chip19 + SCK + PCINT5 **
+
+#define pin14	14	// PC 0 ** chip23 + Analog0 + PCINT8 **
+#define pin15	15	// PC 1 ** chip24 + Analog1 + PCINT9 **
+#define pin16	16	// PC 2 ** chip25 + Analog2 + PCINT10 **
+#define pin17	17	// PC 3 ** chip26 + Analog3 + PCINT11 **
+#define pin18	18	// PC 4 ** chip27 + Analog4 + PCINT12 **
+#define pin19	19	// PC 5 ** chip28 + Analog5 + PCINT13 **
+/*
 #define pin14	14	// PB 6 ** chip9  + XTAL1 + PCINT6 **
 #define pin15	15	// PB 7 ** chip10 + XTAL2 + PCINT7 **
 #define pin16	16	// PC 6 ** chip1  + RESET   + PCINT14 **
-#define pin17	17	// PC 0 ** chip23 + Analog0 + PCINT8 **
-#define pin18	18	// PC 1 ** chip24 + Analog1 + PCINT9 **
-#define pin19	19	// PC 2 ** chip25 + Analog2 + PCINT10 **
-#define pin20	20	// PC 3 ** chip26 + Analog3 + PCINT11 **
-#define pin21	21	// PC 4 ** chip27 + Analog4 + PCINT12 **
-#define pin22	22	// PC 5 ** chip28 + Analog5 + PCINT13 **
-
+*/
 // local analog pin numbers
-#define Analog0		17
-#define Analog1		18
-#define Analog2		19
-#define Analog3		20
-#define Analog4		21
-#define Analog5		22
+#define Analog0		14
+#define Analog1		15
+#define Analog2		16
+#define Analog3		17
+#define Analog4		18
+#define Analog5		19
 
 // input pin for: "GND-pin" analog read
 // p:[0..15]
@@ -96,10 +98,6 @@
 #define pin2pcintLevel(p)       ((p)<8? 2 : ((p)<16? 0 : 1))
 
 // special pin names and its numbers for special functions:
-#define RESET	16
-
-#define XTAL1	14
-#define XTAL2	15
 #define ADC6	6	// ADC6 pin are presents only for TQFP chip! Not pin - local analog number!
 #define ADC7	7	// ADC7 pin are presents only for TQFP chip! Not pin - local analog number!
 
@@ -144,6 +142,10 @@
 #define PC_INT_21	5
 #define PC_INT_22	6
 #define PC_INT_23	7
+
+#define XTAL1	20
+#define XTAL2	21
+#define RESET	22
 
 // ============= special defines for ATmega constants ============ //
 // timer interrupt names and flag bits
@@ -406,121 +408,123 @@
 #define BSET13		SET_MASK_5
 #define BCLR13		CLR_MASK_5
 
-// PB 6 ** chip9  + XTAL1 + PCINT6 **
-#define D14_In		DDRB  &= CLR_MASK_6
-#define D14_Out		DDRB  |= SET_MASK_6
-#define D14_High	PORTB |= SET_MASK_6
-#define D14_Low		PORTB &= CLR_MASK_6
-#define D14_Inv		PORTB ^= SET_MASK_6
-#define D14_Read	((PINB & SET_MASK_6)>>6)
-#define DREG14		DDRB
-#define OREG14		PORTB
-#define IREG14		PINB
-#define BSET14		SET_MASK_6
-#define BCLR14		CLR_MASK_6
+// PC 0 ** chip23 + Analog0 + PCINT8 **
+#define D14_In		DDRC  &= CLR_MASK_0
+#define D14_Out		DDRC  |= SET_MASK_0
+#define D14_High	PORTC |= SET_MASK_0
+#define D14_Low		PORTC &= CLR_MASK_0
+#define D14_Inv		PORTC ^= SET_MASK_0
+#define D14_Read	(PINC & SET_MASK_0)
+#define DREG14		DDRC
+#define OREG14		PORTC
+#define IREG14		PINC
+#define BSET14		SET_MASK_0
+#define BCLR14		CLR_MASK_0
 
-// PB 7 ** chip10 + XTAL2 + PCINT7 **
-#define D15_In		DDRB  &= CLR_MASK_7
-#define D15_Out		DDRB  |= SET_MASK_7
-#define D15_High	PORTB |= SET_MASK_7
-#define D15_Low		PORTB &= CLR_MASK_7
-#define D15_Inv		PORTB ^= SET_MASK_7
-#define D15_Read	((PINB & SET_MASK_7)>>7)
-#define DREG15		DDRB
-#define OREG15		PORTB
-#define IREG15		PINB
-#define BSET15		SET_MASK_7
-#define BCLR15		CLR_MASK_7
+// PC 1 ** chip24 + Analog1 + PCINT9 **
+#define D15_In		DDRC  &= CLR_MASK_1
+#define D15_Out		DDRC  |= SET_MASK_1
+#define D15_High	PORTC |= SET_MASK_1
+#define D15_Low		PORTC &= CLR_MASK_1
+#define D15_Inv		PORTC ^= SET_MASK_1
+#define D15_Read	((PINC & SET_MASK_1)>>1)
+#define DREG15		DDRC
+#define OREG15		PORTC
+#define IREG15		PINC
+#define BSET15		SET_MASK_1
+#define BCLR15		CLR_MASK_1
 
-// PC 6 ** chip1  + RESET   + PCINT14 **
-#define D16_In		DDRC  &= CLR_MASK_6
-#define D16_Out		DDRC  |= SET_MASK_6
-#define D16_High	PORTC |= SET_MASK_6
-#define D16_Low		PORTC &= CLR_MASK_6
-#define D16_Inv		PORTC ^= SET_MASK_6
-#define D16_Read	((PINC & SET_MASK_6)>>6)
+// PC 2 ** chip25 + Analog2 + PCINT10 **
+#define D16_In		DDRC  &= CLR_MASK_2
+#define D16_Out		DDRC  |= SET_MASK_2
+#define D16_High	PORTC |= SET_MASK_2
+#define D16_Low		PORTC &= CLR_MASK_2
+#define D16_Inv		PORTC ^= SET_MASK_2
+#define D16_Read	((PINC & SET_MASK_2)>>2)
 #define DREG16		DDRC
 #define OREG16		PORTC
 #define IREG16		PINC
-#define BSET16		SET_MASK_6
-#define BCLR16		CLR_MASK_6
+#define BSET16		SET_MASK_2
+#define BCLR16		CLR_MASK_2
 
-// PC 0 ** chip23 + Analog0 + PCINT8 **
-#define D17_In		DDRC  &= CLR_MASK_0
-#define D17_Out		DDRC  |= SET_MASK_0
-#define D17_High	PORTC |= SET_MASK_0
-#define D17_Low		PORTC &= CLR_MASK_0
-#define D17_Inv		PORTC ^= SET_MASK_0
-#define D17_Read	(PINC & SET_MASK_0)
+// PC 3 ** chip26 + Analog3 + PCINT11 **
+#define D17_In		DDRC  &= CLR_MASK_3
+#define D17_Out		DDRC  |= SET_MASK_3
+#define D17_High	PORTC |= SET_MASK_3
+#define D17_Low		PORTC &= CLR_MASK_3
+#define D17_Inv		PORTC ^= SET_MASK_3
+#define D17_Read	((PINC & SET_MASK_3)>>3)
 #define DREG17		DDRC
 #define OREG17		PORTC
 #define IREG17		PINC
-#define BSET17		SET_MASK_0
-#define BCLR17		CLR_MASK_0
+#define BSET17		SET_MASK_3
+#define BCLR17		CLR_MASK_3
 
-// PC 1 ** chip24 + Analog1 + PCINT9 **
-#define D18_In		DDRC  &= CLR_MASK_1
-#define D18_Out		DDRC  |= SET_MASK_1
-#define D18_High	PORTC |= SET_MASK_1
-#define D18_Low		PORTC &= CLR_MASK_1
-#define D18_Inv		PORTC ^= SET_MASK_1
-#define D18_Read	((PINC & SET_MASK_1)>>1)
+// PC 4 ** chip27 + Analog4 + PCINT12 **
+#define D18_In		DDRC  &= CLR_MASK_4
+#define D18_Out		DDRC  |= SET_MASK_4
+#define D18_High	PORTC |= SET_MASK_4
+#define D18_Low		PORTC &= CLR_MASK_4
+#define D18_Inv		PORTC ^= SET_MASK_4
+#define D18_Read	((PINC & SET_MASK_4)>>4)
 #define DREG18		DDRC
 #define OREG18		PORTC
 #define IREG18		PINC
-#define BSET18		SET_MASK_1
-#define BCLR18		CLR_MASK_1
+#define BSET18		SET_MASK_4
+#define BCLR18		CLR_MASK_4
 
-// PC 2 ** chip25 + Analog2 + PCINT10 **
-#define D19_In		DDRC  &= CLR_MASK_2
-#define D19_Out		DDRC  |= SET_MASK_2
-#define D19_High	PORTC |= SET_MASK_2
-#define D19_Low		PORTC &= CLR_MASK_2
-#define D19_Inv		PORTC ^= SET_MASK_2
-#define D19_Read	((PINC & SET_MASK_2)>>2)
+// PC 5 ** chip28 + Analog5 + PCINT13 **
+#define D19_In		DDRC  &= CLR_MASK_5
+#define D19_Out		DDRC  |= SET_MASK_5
+#define D19_High	PORTC |= SET_MASK_5
+#define D19_Low		PORTC &= CLR_MASK_5
+#define D19_Inv		PORTC ^= SET_MASK_5
+#define D19_Read	((PINC & SET_MASK_5)>>5)
 #define DREG19		DDRC
 #define OREG19		PORTC
 #define IREG19		PINC
-#define BSET19		SET_MASK_2
-#define BCLR19		CLR_MASK_2
+#define BSET19		SET_MASK_5
+#define BCLR19		CLR_MASK_5
 
-// PC 3 ** chip26 + Analog3 + PCINT11 **
-#define D20_In		DDRC  &= CLR_MASK_3
-#define D20_Out		DDRC  |= SET_MASK_3
-#define D20_High	PORTC |= SET_MASK_3
-#define D20_Low		PORTC &= CLR_MASK_3
-#define D20_Inv		PORTC ^= SET_MASK_3
-#define D20_Read	((PINC & SET_MASK_3)>>3)
-#define DREG20		DDRC
-#define OREG20		PORTC
-#define IREG20		PINC
-#define BSET20		SET_MASK_3
-#define BCLR20		CLR_MASK_3
+// !!! Special pin defines !!! Not present in all ..duino boards! //
 
-// PC 4 ** chip27 + Analog4 + PCINT12 **
-#define D21_In		DDRC  &= CLR_MASK_4
-#define D21_Out		DDRC  |= SET_MASK_4
-#define D21_High	PORTC |= SET_MASK_4
-#define D21_Low		PORTC &= CLR_MASK_4
-#define D21_Inv		PORTC ^= SET_MASK_4
-#define D21_Read	((PINC & SET_MASK_4)>>4)
-#define DREG21		DDRC
-#define OREG21		PORTC
-#define IREG21		PINC
-#define BSET21		SET_MASK_4
-#define BCLR21		CLR_MASK_4
+// PB 6 ** chip9  + XTAL1 + PCINT6 **
+#define D20_In		DDRB  &= CLR_MASK_6
+#define D20_Out		DDRB  |= SET_MASK_6
+#define D20_High	PORTB |= SET_MASK_6
+#define D20_Low		PORTB &= CLR_MASK_6
+#define D20_Inv		PORTB ^= SET_MASK_6
+#define D20_Read	((PINB & SET_MASK_6)>>6)
+#define DREG20		DDRB
+#define OREG20		PORTB
+#define IREG20		PINB
+#define BSET20		SET_MASK_6
+#define BCLR20		CLR_MASK_6
 
-// PC 5 ** chip28 + Analog5 + PCINT13 **
-#define D22_In		DDRC  &= CLR_MASK_5
-#define D22_Out		DDRC  |= SET_MASK_5
-#define D22_High	PORTC |= SET_MASK_5
-#define D22_Low		PORTC &= CLR_MASK_5
-#define D22_Inv		PORTC ^= SET_MASK_5
-#define D22_Read	((PINC & SET_MASK_5)>>5)
+// PB 7 ** chip10 + XTAL2 + PCINT7 **
+#define D21_In		DDRB  &= CLR_MASK_7
+#define D21_Out		DDRB  |= SET_MASK_7
+#define D21_High	PORTB |= SET_MASK_7
+#define D21_Low		PORTB &= CLR_MASK_7
+#define D21_Inv		PORTB ^= SET_MASK_7
+#define D21_Read	((PINB & SET_MASK_7)>>7)
+#define DREG21		DDRB
+#define OREG21		PORTB
+#define IREG21		PINB
+#define BSET21		SET_MASK_7
+#define BCLR21		CLR_MASK_7
+
+// PC 6 ** chip1  + RESET   + PCINT14 **
+#define D22_In		DDRC  &= CLR_MASK_6
+#define D22_Out		DDRC  |= SET_MASK_6
+#define D22_High	PORTC |= SET_MASK_6
+#define D22_Low		PORTC &= CLR_MASK_6
+#define D22_Inv		PORTC ^= SET_MASK_6
+#define D22_Read	((PINC & SET_MASK_6)>>6)
 #define DREG22		DDRC
 #define OREG22		PORTC
 #define IREG22		PINC
-#define BSET22		SET_MASK_5
-#define BCLR22		CLR_MASK_5
+#define BSET22		SET_MASK_6
+#define BCLR22		CLR_MASK_6
 
 #endif /* __AVR_ATmega328P__ */
